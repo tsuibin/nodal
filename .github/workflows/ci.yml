@@ -22,6 +22,49 @@ jobs:
       - run: go build ./...
       - run: go test ./... -count=1
 
+  # 真库迁移验证：pgvector 服务 + 执行 000001_init + 断言表/向量列/种子数据
+  integration:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: nodal
+          POSTGRES_PASSWORD: nodal_dev_pwd
+          POSTGRES_DB: nodal
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U nodal -d nodal"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache-dependency-path: backend/go.sum
+      - run: go mod download
+      - name: 执行迁移并断言
+        env:
+          NODAL_TEST_DSN: postgres://nodal:nodal_dev_pwd@localhost:5432/nodal?sslmode=disable
+        run: go test ./migrate -count=1 -run RealDB -v
+
+  # SQL 语法静态校验（libpg_query，无需数据库）
+  sql-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pglast
+      - run: python3 scripts/check_schema.py backend/migrate/000001_init.up.sql
+
   frontend:
     runs-on: ubuntu-latest
     defaults:

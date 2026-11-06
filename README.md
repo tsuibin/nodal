@@ -48,7 +48,18 @@ docker compose up -d          # postgres + redis
 bash scripts/init-db.sh       # 开启 pgvector 扩展
 ```
 
-### 2. 起后端
+### 2. 建库（两种方式，任选其一）
+
+```bash
+cd backend
+go run ./cmd/migrate --mode=sql     # 推荐：按 backend/migrate/*.up.sql 建库并记录 schema_migrations
+go run ./cmd/migrate --mode=auto    # 本地快速迭代：GORM AutoMigrate，自动补齐复合外键/部分索引/HNSW
+go run ./cmd/migrate --mode=sql --down   # 回滚最新一版
+```
+
+两种方式最终结构一致（9 张表 + 4 个内置 Agent 种子）；`--mode=sql` 支持版本记录与回滚，线上用这一条。
+
+### 3. 起后端
 
 ```bash
 cd backend
@@ -57,7 +68,7 @@ go run ./cmd/server           # 默认 :8080
 curl http://localhost:8080/healthz
 ```
 
-### 3. 起前端
+### 4. 起前端
 
 ```bash
 cd frontend
@@ -70,7 +81,7 @@ npm run dev                   # 默认 :5173，已代理 /api → :8080
 | # | 模块 | 状态 |
 |---|---|---|
 | 0 | 脚手架 & 基础依赖 | ✅ |
-| 1 | 数据库迁移脚本 | ⬜ |
+| 1 | 数据库迁移脚本 | ✅ |
 | 2 | 用户 & 鉴权 | ⬜ |
 | 3 | 画布 CRUD / 节点边 | ⬜ |
 | 4 | Agent 模板 & 模型调度 | ⬜ |

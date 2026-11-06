@@ -11,9 +11,9 @@ import (
 
 // Config 是服务端运行期配置的聚合结构。
 type Config struct {
-	AppEnv  string // development / production
+	AppEnv   string // development / production
 	HTTPAddr string // 监听地址，例如 :8080
-	Version string // 构建版本，供 /healthz 返回
+	Version  string // 构建版本，供 /healthz 返回
 
 	DatabaseURL string
 	RedisAddr   string
