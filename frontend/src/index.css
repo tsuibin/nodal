@@ -1,0 +1,59 @@
+@import 'tailwindcss';
+
+/* ------------------------------------------------------------------
+ * Nodal 设计令牌（对齐 docs/visual-spec.md）
+ * 通过 CSS 变量暴露，双主题由 [data-theme] 切换
+ * ------------------------------------------------------------------ */
+:root {
+  /* 品牌语义色 */
+  --nodal-primary: #4060ff;
+  --nodal-refute: #ff6b6b;
+  --nodal-support: #36c9a5;
+  --nodal-parallel: #ffc857;
+
+  /* 浅色主题 */
+  --nodal-bg: #f7f8fa;
+  --nodal-surface: #ffffff;
+  --nodal-text: #1f2937;
+  --nodal-text-muted: #6b7280;
+  --nodal-border: #e5e7eb;
+  --nodal-canvas-bg: #f2f4f7;
+}
+
+[data-theme='dark'] {
+  --nodal-bg: #111318;
+  --nodal-surface: #1a1d24;
+  --nodal-text: #e5e7eb;
+  --nodal-text-muted: #9ca3af;
+  --nodal-border: #2a2e37;
+  --nodal-canvas-bg: #0d0f14;
+}
+
+@theme inline {
+  --color-nodal-primary: var(--nodal-primary);
+  --color-nodal-refute: var(--nodal-refute);
+  --color-nodal-support: var(--nodal-support);
+  --color-nodal-parallel: var(--nodal-parallel);
+  --color-nodal-bg: var(--nodal-bg);
+  --color-nodal-surface: var(--nodal-surface);
+  --color-nodal-text: var(--nodal-text);
+  --color-nodal-muted: var(--nodal-text-muted);
+  --color-nodal-border: var(--nodal-border);
+  --font-sans: Inter, 'Source Han Sans SC', 'Noto Sans SC', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--nodal-bg);
+  color: var(--nodal-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 200ms ease-out, color 200ms ease-out;
+}
