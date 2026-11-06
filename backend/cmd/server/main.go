@@ -1,5 +1,5 @@
 // Nodal 后端入口。
-// 模块 0：加载配置 → 启动 HTTP 服务 → 优雅退出。
+// 模块 0：加载配置 → （可选）连接数据库 → 启动 HTTP 服务 → 优雅退出。
 package main
 
 import (
@@ -13,9 +13,11 @@ import (
 	"time"
 
 	"github.com/joho/godotenv"
+	"gorm.io/gorm"
 
 	"github.com/nodal/nodal/backend/internal/config"
 	"github.com/nodal/nodal/backend/internal/httpapi"
+	"github.com/nodal/nodal/backend/internal/store"
 )
 
 func main() {
@@ -27,9 +29,26 @@ func main() {
 		log.Fatalf("加载配置失败: %v", err)
 	}
 
+	// 数据库：配了 DSN 就连，没配也能起（前端联调、CI 冒烟不需要库）
+	var db *gorm.DB
+	if cfg.DatabaseURL != "" {
+		db, err = store.Open(store.DefaultOptions(cfg.DatabaseURL, !cfg.IsProduction()))
+		if err != nil {
+			log.Fatalf("数据库初始化失败: %v", err)
+		}
+		defer func() {
+			if cerr := store.Close(db); cerr != nil {
+				log.Printf("关闭数据库连接失败: %v", cerr)
+			}
+		}()
+		log.Println("数据库已连接")
+	} else {
+		log.Println("未配置 DATABASE_URL，跳过数据库连接（仅模块 0 允许）")
+	}
+
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,
-		Handler:           httpapi.NewRouter(cfg),
+		Handler:           httpapi.NewRouter(cfg, db),
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 

@@ -8,12 +8,14 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 
 	"github.com/nodal/nodal/backend/internal/config"
 )
 
 // NewRouter 构建引擎与路由表。
-func NewRouter(cfg *config.Config) *gin.Engine {
+// db 可能为 nil（未配置数据库时），健康检查会如实反映数据库状态。
+func NewRouter(cfg *config.Config, db *gorm.DB) *gin.Engine {
 	if cfg.IsProduction() {
 		gin.SetMode(gin.ReleaseMode)
 	}
@@ -30,10 +32,21 @@ func NewRouter(cfg *config.Config) *gin.Engine {
 
 	// 健康检查：供前端启动时探测与容器探针使用
 	r.GET("/api/healthz", func(c *gin.Context) {
+		dbStatus := "disabled"
+		if db != nil {
+			dbStatus = "ok"
+			if sqlDB, err := db.DB(); err == nil {
+				if err := sqlDB.Ping(); err != nil {
+					dbStatus = "down"
+				}
+			}
+		}
+
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
 			"version": cfg.Version,
 			"env":     cfg.AppEnv,
+			"db":      dbStatus,
 			"time":    time.Now().Format(time.RFC3339),
 		})
 	})
