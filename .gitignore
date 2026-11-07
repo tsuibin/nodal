@@ -1,7 +1,6 @@
 # 后端产物
 backend/data/
-backend/bin/
-*.db
+backend/bin/*.db
 *.db-shm
 *.db-wal
 
@@ -17,3 +16,6 @@ node_modules/
 
 # Vite 缓存
 frontend/.vite/
+
+# 本机演示的临时日志与截图（Windows 本地跑法，见 docs/LOCAL-DEMO-WINDOWS.md）
+/data/

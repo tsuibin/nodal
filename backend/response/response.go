@@ -41,6 +41,11 @@ func Fail(c *gin.Context, err error) {
 			"path", c.Request.URL.Path,
 			"error", err,
 		)
+	}
+	// 只折叠「未知错误」（已归一化为 5000 的那种）。像 7001 REPL 沙箱未启用、
+	// 5001 向量化失败这类已知业务码本身带可操作文案，必须原样返回 ——
+	// 否则前端只能显示统一的「服务开小差了」，用户永远不知道该打开哪个开关。
+	if appErr.Code == apperr.CodeInternal {
 		appErr = apperr.New(apperr.CodeInternal, "")
 	}
 

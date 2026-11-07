@@ -79,7 +79,8 @@ func (m *Manager) MemoryMB() int          { return m.cfg.MemoryMB }
 // Create 登记一个会话。此时不启动进程，等 WebSocket attach 后再 Start。
 func (m *Manager) Create(id *token.Identity, language Language, code string) (*Session, error) {
 	if !m.cfg.Enabled || m.cfg.Runtime == nil {
-		return nil, apperr.New(apperr.CodeReplUnavailable, "REPL 沙箱未启用")
+		return nil, apperr.New(apperr.CodeReplUnavailable,
+			"代码执行未启用：需要 NODAL_REPL_ENABLED=true，且沙箱依赖 Linux 用户命名空间（Windows 等无隔离环境不支持）")
 	}
 	if !id.IsUser() {
 		return nil, apperr.New(apperr.CodeForbidden, "REPL 仅对注册用户开放")

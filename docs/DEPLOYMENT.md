@@ -247,6 +247,35 @@ docker compose logs -f backend
 - 容器/受限内核里若 `unshare` 失败，REPL 会报 `7001`，应关闭该能力或改用受支持的运行时；
 - 无论哪种运行时，都不要把沙箱进程与主库放在同一权限域。
 
+### 7.1 平台要求：没有 Linux 用户命名空间就必须关掉 REPL
+
+`local` 运行时不是「可选优化」，而是硬依赖：它靠
+`unshare --user --map-root-user --net --mount --pid --fork` 起隔离域，再用 tmpfs 覆盖
+`/tmp`、`/var/tmp`、`/dev/shm`，只读 bind mount 隐藏 `/home`、`/root`，最后用
+`ulimit -v/-t/-f` 限内存、CPU 时间与文件大小。以下环境**不具备**这套能力，必须设
+`NODAL_REPL_ENABLED=false`：
+
+- Windows / macOS（没有 `unshare`、tmpfs、RLIMIT_*）；
+- 未授予 `CLONE_NEWUSER` / `unshare` 的容器（常见于默认 seccomp 的 K8s、部分 rootless 运行时）；
+- 关闭用户命名空间的内核（`kernel.unprivileged_userns_clone=0`）。
+
+关闭后的用户可见行为已经做过对齐：代码节点点「运行」不再返回通用的「服务开小差了」，
+而是 `HTTP 503 + code=7001 +「代码执行未启用：需要 NODAL_REPL_ENABLED=true，且沙箱依赖 Linux
+用户命名空间（Windows 等无隔离环境不支持）」`，前端运行面板红字直接显示这句话。
+这一行为依赖 `response.Fail` 只折叠未知错误的约定，见 `docs/API.md` 第 5 节。
+
+**不要**为了「让运行按钮能用」而在无隔离平台上改回 `NODAL_REPL_ENABLED=true`。服务本身能启动
+（`NewRuntime("local")` 只返回 `&LocalRuntime{}`，不做能力探测），但真正使用时才暴露问题，
+实测（Windows 11 + 便携 Go 1.23 编译的二进制，`NODAL_REPL_ENABLED=true`，端口 8099）：
+
+- `POST /api/repl/create` 返回 **200**，`runtime: "local"`、`timeout_seconds: 30`；
+- 随后 WebSocket `/api/repl/ws/:id?token=…` 升级成功，第一帧就是
+  `{"type":"error","error_code":7001,"message":"biz error code=7001 msg=沙箱启动失败：未找到 unshare，无法启用本地隔离运行时: exec: \"unshare\": executable file not found in %PATH%"}`
+  然后连接以 1006 关闭。
+
+即：创建阶段「看起来成功」，失败被推迟到 attach，比直接关闭更难排查；而且此时根本没有
+网络/内存/文件系统隔离。要在这类平台上跑代码，只有换 Linux 宿主机（或自建受控运行时）两条路。
+
 ## 8. 上线检查清单
 
 - [ ] `NODAL_ENV=prod`，JWT/ENC 密钥为真实随机值且长度合格；

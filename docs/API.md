@@ -368,6 +368,15 @@ data: {"run_id":"...","node_count":3,"edge_count":2,"skipped":1}
 
 前端网络层用 `-1` 表示网络/超时错误，不对应后端业务码。
 
+错误码到 HTTP 状态的映射在 `backend/apperr/apperr.go` 的 `codeTable` 里，例如 `1003` → 403、
+`7001` → 503、`7003` → 429、`5000` → 500。
+
+**折叠约定**（`backend/response/response.go`）：只有「未知错误」——即非 `*apperr.Error`、
+由 `apperr.From` 归一化出来的 `5000`——才会被折叠成 `code=5000 message=服务开小差了，请稍后重试`，
+避免内部细节外泄。已在 `codeTable` 里登记的已知业务码（7001、7005、4005 等）**原样返回**自己的
+HTTP 状态与文案，因为它们的文案本身是可操作的（例如「代码执行未启用：需要 NODAL_REPL_ENABLED=true…」）。
+新增业务码时务必同时登记 `codeTable`，否则会退化成 400 且丢失语义。
+
 ## 6. 已知契约边界
 
 - 当前画布文档以 `Nodes / Edges / Viewport` 多列存储，尚未切到单列 `content_json`；接口层已经按「整图 JSON」语义暴露；

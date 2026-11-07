@@ -165,7 +165,9 @@ export const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL ?? '/api'
 export const http = axios.create({
   baseURL: API_BASE_URL,
   timeout: 15_000,
-  headers: { 'Content-Type': 'application/json' },
+  // 不要在这里设全局 Content-Type：一旦默认头是 application/json，
+  // axios 会把 FormData 直接序列化成 JSON 字符串（文件上传必然拿不到 file 字段）。
+  // 普通对象请求由 axios 自己补 application/json，FormData 由浏览器补 multipart boundary。
 })
 
 http.interceptors.request.use((config) => {

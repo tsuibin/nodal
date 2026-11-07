@@ -217,8 +217,9 @@ func (s *Session) Close(reason string) {
 			_ = ptmx.Close()
 		}
 		if cmd != nil && cmd.Process != nil {
-			// 负 pid 表示整个进程组；子进程在独立进程组里。
-			_ = syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL)
+			// 先收整个进程组（子进程在独立进程组里），再兜底杀单个进程。
+			// 进程组信号的实现按平台分文件，Windows 上没有这套语义。
+			terminateGroup(cmd)
 			_ = cmd.Process.Kill()
 		}
 		slog.Info("repl session closed",
