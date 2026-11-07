@@ -1,9 +1,9 @@
 # Nodal 部署
 
-Nodal 是 monorepo：Go 后端在 `server/`，React 前端在 `frontend/`。
+Nodal 是 monorepo：Go 后端在 `backend/`，React 前端在 `frontend/`。
 支持三种运行方式：本地 SQLite（开发/演示）、本地 PostgreSQL + pgvector（预发）、Docker Compose（参考编排）。
 
-> 当前仓库没有 `backend/` 目录；Go module 仍是 `server/`。目录迁移会在单独的结构重构分支处理，部署命令以本文为准。
+> Go module 名为 `github.com/nodal/nodal-server`，代码位于 `backend/`；部署命令以本文为准。
 
 ## 1. 环境要求
 
@@ -21,7 +21,7 @@ Redis 当前**没有接入**：没有缓存层依赖，部署不需要 Redis。
 
 ```bash
 # 终端 1：后端
-cd server
+cd backend
 GOTOOLCHAIN=local \
 NODAL_HTTP_ADDR=:8080 \
 NODAL_DB_DRIVER=sqlite \
@@ -88,7 +88,7 @@ openssl rand -base64 32     # NODAL_ENC_KEY
 | `NODAL_REPL_DISK_MB` | `32` | 会话 tmpfs |
 | `NODAL_REPL_FIRECRACKER_LAUNCHER` | 空 | `runtime=firecracker` 时必填 |
 
-完整定义见 `server/internal/config/config.go`；不在表里的变量不要臆造。
+完整定义见 `backend/config/config.go`；不在表里的变量不要臆造。
 
 ## 4. PostgreSQL + pgvector
 
@@ -98,9 +98,16 @@ CREATE DATABASE nodal;
 CREATE EXTENSION IF NOT EXISTS vector;
 ```
 
-后端启动时会在 `AutoMigrate` 后自动执行 `vector.EnsurePGVectorSchema`：
-建 `vector(N)` 列与 HNSW 索引。`NODAL_EMBED_DIM` 必须与模型输出维度一致；
-切换 embedding 模型且维度变化时，需要清空 `knowledge_chunks` 的向量列并重建索引。
+可以直接执行仓库内的初始化脚本（推荐空库）：
+
+```bash
+NODAL_DB_DSN='postgres://nodal:pass@127.0.0.1:5432/nodal' ./scripts/db-init.sh
+```
+
+等价 SQL：`psql "$NODAL_DB_DSN" -f backend/migrate/0001_init.sql`。
+
+后端启动时仍会 `AutoMigrate`，并在 `vector.EnsurePGVectorSchema` 中补齐 `vector(N)` 列与 HNSW 索引。
+`NODAL_EMBED_DIM` 必须与模型输出维度一致；默认脚本按 1536 建列，改维度时要同步改 SQL 并重建索引。
 
 生产库建议：
 
@@ -112,7 +119,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 ```bash
 # 后端
-cd server
+cd backend
 CGO_ENABLED=0 GOTOOLCHAIN=local go build -trimpath -ldflags="-s -w" -o bin/nodal ./cmd/server
 
 # 前端
@@ -132,9 +139,9 @@ After=network.target postgresql.service
 [Service]
 Type=simple
 User=nodal
-WorkingDirectory=/opt/nodal/server
+WorkingDirectory=/opt/nodal/backend
 EnvironmentFile=/etc/nodal/nodal.env
-ExecStart=/opt/nodal/server/bin/nodal
+ExecStart=/opt/nodal/backend/bin/nodal
 Restart=on-failure
 RestartSec=5
 LimitNOFILE=65536
@@ -266,7 +273,6 @@ curl -fsS http://127.0.0.1:8080/healthz
 
 ## 10. 已知差异
 
-- 仓库后端目录仍是 `server/`，不是目标树里的 `backend/`；
-- 没有 `backend/migrate/` SQL 脚本，建表依赖 GORM AutoMigrate；
+- `backend/migrate/0001_init.sql` 是 PostgreSQL 初始化参考脚本，运行期仍以 GORM AutoMigrate 为准；
 - 画布数据仍分 `nodes/edges/viewport/tags` 多列存储，未切到单列 `content_json`；
 - Redis 缓存未实现；分享只读页前端仍是占位。

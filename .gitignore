@@ -1,6 +1,6 @@
 # 后端产物
-server/data/
-server/bin/
+backend/data/
+backend/bin/
 *.db
 *.db-shm
 *.db-wal
