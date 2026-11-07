@@ -5,9 +5,9 @@
  * hook 在 canvasId 变化时自动拉取当前挂载用于回显。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ApiError } from '../api/http'
-import { knowledgeApi } from '../api/knowledge'
-import { ragApi } from '../api/rag'
+import { ApiError } from '../services/http'
+import { knowledgeApi } from '../services/knowledge'
+import { ragApi } from '../services/rag'
 import type { MountView, RetrieveResult } from '../types/knowledge'
 
 export interface UseKnowledgeMountResult {

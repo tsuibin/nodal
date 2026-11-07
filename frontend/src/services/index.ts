@@ -1,5 +1,6 @@
 export * from './http'
 export * from './auth'
+export * from './canvas'
 export * from './agent'
 export * from './model'
 export * from './knowledge'

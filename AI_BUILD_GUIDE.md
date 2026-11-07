@@ -50,7 +50,7 @@ nodal/
 │       ├── repl/        # 模块7 沙箱（目标树中的 replsandbox）
 │       ├── router/      # 路由分组
 │       └── ...
-├── web/                 # React + TS 前端
+├── frontend/                 # React + TS 前端
 │   └── src/
 │       ├── api/         # 请求封装（目标树中的 services）
 │       ├── hooks/       # 数据/流式 hook
@@ -73,10 +73,10 @@ nodal/
 | `backend/middleware` | `server/internal/middleware` | 同上 |
 | `backend/migrate` | `server/internal/db` | `AutoMigrate` 入口 |
 | `backend/replsandbox` | `server/internal/repl` | 模块7 沙箱 |
-| `frontend/src/services` | `web/src/api` | HTTP/SSE/WS 封装 |
+| `frontend/src/services` | `frontend/src/services` | HTTP/SSE/WS 封装 |
 | `frontend/src/pages` | 模块 8/9 新建 | 首页/资源库/广场/画布 |
-| `frontend/src/components` | `web/src/components` | 复用组件 |
-| `frontend/src/hooks` | `web/src/hooks` | 数据 hook |
+| `frontend/src/components` | `frontend/src/components` | 复用组件 |
+| `frontend/src/hooks` | `frontend/src/hooks` | 数据 hook |
 | `frontend/src/store` | 模块 9 新建 | 画布撤销重做/选择状态 |
 
 ## 4. 模块状态
@@ -90,7 +90,7 @@ nodal/
 | 5 | 知识库 / 切片 / 向量 / RAG 挂载 | 已完成 | 基线 |
 | 6 | 广场 / 点赞评论 / 分享链接 | 已完成 | 基线 |
 | 7 | REPL 隔离沙箱 / WS 终端 / 前端运行面板 | 已完成 | `feature/module-7-repl` |
-| 8 | 前端首页 / 资源库 / 广场 | 待开始 | - |
+| 8 | 前端首页 / 资源库 / 广场 | 已完成 | `feature/module-8-frontend` |
 | 9 | 画布页 / React Flow / 推演交互 | 待开始 | - |
 | 10 | Demo 画布 / 联调 / 部署文档 | 待开始 | - |
 
@@ -106,7 +106,7 @@ go test ./...
 # 前端
 cd ../web
 npm install
-npx tsc --noEmit
+npm run typecheck
 ```
 
 模块 7 的 `internal/repl` 集成测试会真实启动 `unshare` + PTY；在不支持用户命名空间的 CI 环境会自动 `t.Skip`。
@@ -115,5 +115,5 @@ npx tsc --noEmit
 
 - 每个模块结束交付两份文件：`README.md`（说明、接口、配置、自测、边界）+ `nodal-moduleN.zip`（完整代码）。
 - 先删除旧 zip，再打包，避免重复交付。
-- 打包排除：`web/node_modules`、`server/data`、`.env`、`dist`、`*.db`、`.git`。
+- 打包排除：`frontend/node_modules`、`server/data`、`.env`、`dist`、`*.db`、`.git`。
 - 无法真机验证的能力（Firecracker、pgvector、真实模型 Key）必须在 README 的「已知边界」中如实标注，不得宣称已验证。

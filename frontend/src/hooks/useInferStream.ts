@@ -13,8 +13,8 @@
  * 不接 React Flow 也可以先渲染到一个独立预览层。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { streamRunInfer } from '../api/infer'
-import { ApiError } from '../api/http'
+import { streamRunInfer } from '../services/infer'
+import { ApiError } from '../services/http'
 import type {
   InferDonePayload,
   InferSourcesEvent,
