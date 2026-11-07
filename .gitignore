@@ -1,0 +1,16 @@
+# 后端产物
+server/data/
+server/bin/
+*.db
+*.db-shm
+*.db-wal
+
+# 前端
+web/node_modules/
+web/dist/
+node_modules/
+
+# 环境与编辑器
+.env
+.env.local
+.DS_Store
