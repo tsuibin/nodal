@@ -9,7 +9,13 @@
  */
 import { request } from './http'
 import type { CanvasView } from '../types/canvas'
-import type { ShareLink, SharePermission, ShareResolveResult } from '../types/square'
+import type {
+  ShareLink,
+  ShareLinkList,
+  ShareLinkRevokeResult,
+  SharePermission,
+  ShareResolveResult,
+} from '../types/square'
 
 export const shareApi = {
   createLink(
@@ -25,14 +31,14 @@ export const shareApi = {
   },
 
   listLinks(canvasId: number): Promise<{ items: ShareLink[]; total: number }> {
-    return request<{ items: ShareLink[]; total: number }>({
+    return request<ShareLinkList>({
       url: `/canvas/${canvasId}/share-links`,
       method: 'GET',
     })
   },
 
-  revokeLink(canvasId: number, linkId: number): Promise<{ id: number; enabled: boolean }> {
-    return request<{ id: number; enabled: boolean }>({
+  revokeLink(canvasId: number, linkId: number): Promise<ShareLinkRevokeResult> {
+    return request<ShareLinkRevokeResult>({
       url: `/canvas/${canvasId}/share-links/${linkId}`,
       method: 'DELETE',
     })

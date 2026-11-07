@@ -39,7 +39,7 @@ export interface MountView {
 }
 
 export interface RetrievePayload {
-      canvas_id: number
+  canvas_id: number
   query: string
   /** 1-20，缺省用服务端 NODAL_RAG_TOP_K */
   top_k?: number

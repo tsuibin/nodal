@@ -62,3 +62,9 @@ export interface SaveCredentialPayload {
   /** 可选：自建代理/网关，留空用内置默认地址 */
   base_url?: string
 }
+
+/** 删除某个 provider 的自有密钥（不返回明文） */
+export interface CredentialDeleteResult {
+  provider: string
+  deleted: boolean
+}

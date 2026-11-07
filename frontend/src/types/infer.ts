@@ -73,6 +73,13 @@ export interface InferWarningEvent {
   skipped: number
 }
 
+/** SSE event: error —— 流已建立后由服务端下发的业务错误 */
+export interface InferErrorEvent {
+  code: number
+  message: string
+  details?: Record<string, string>
+}
+
 /** SSE event: done */
 export interface InferDonePayload {
   run_id: string

@@ -10,6 +10,7 @@
  * DELETE /api/canvas/:id/comments/:id  删除评论（作者或画布所有者）
  */
 import { request } from './http'
+import type { DeleteResult } from '../types/api'
 import type { CanvasView } from '../types/canvas'
 import type { CanvasComment, CommentList, LikeResult, SquareList } from '../types/square'
 
@@ -50,8 +51,8 @@ export const squareApi = {
     })
   },
 
-  removeComment(canvasId: number, commentId: number): Promise<{ id: number; deleted: boolean }> {
-    return request<{ id: number; deleted: boolean }>({
+  removeComment(canvasId: number, commentId: number): Promise<DeleteResult> {
+    return request<DeleteResult>({
       url: `/canvas/${canvasId}/comments/${commentId}`,
       method: 'DELETE',
     })

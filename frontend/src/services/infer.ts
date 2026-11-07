@@ -21,6 +21,7 @@ import { API_BASE_URL, ApiError, tokenStore } from './http'
 import type {
   InferDonePayload,
   InferEdgeEvent,
+  InferErrorEvent,
   InferNodeEvent,
   InferSourcesEvent,
   InferStartEvent,
@@ -141,11 +142,12 @@ export async function streamRunInfer(
         donePayload = data as InferDonePayload
         break
       case 'error': {
-        const err = data as { code?: number; message?: string }
+        const err = data as InferErrorEvent
         throw new ApiError({
           code: err.code ?? 5000,
           message: err.message || '推演失败',
           status: resp.status,
+          details: err.details,
         })
       }
       default:

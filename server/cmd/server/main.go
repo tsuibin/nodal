@@ -74,6 +74,10 @@ func main() {
 	}
 	ragService := service.NewRAGService(gdb, knowledgeService, vecStore, cfg)
 
+	// 模块 10：Demo 画布（注册时种，资源库空列表时也可调用 /api/demo/seed 兜底）
+	demoService := service.NewDemoService(gdb)
+	demoHandler := handler.NewDemoHandler(demoService)
+
 	// 模块 6：广场 / 点赞评论 / 分享链接
 	squareService := service.NewSquareService(gdb)
 	shareService := service.NewShareService(gdb, canvasService)
@@ -123,6 +127,7 @@ func main() {
 		Square:        squareHandler,
 		Share:         shareHandler,
 		Repl:          replHandler,
+		Demo:          demoHandler,
 		Authenticator: authenticator,
 	})
 
