@@ -5,18 +5,26 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && NODE_OPTIONS=--max-old-space-size=4096 vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@xyflow/react": "^12.12.1",
     "axios": "^1.7.7",
+    "katex": "^0.19.1",
+    "monaco-editor": "^0.57.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.28.0"
+    "react-markdown": "^10.1.0",
+    "react-router-dom": "^6.28.0",
+    "remark-gfm": "^4.0.1",
+    "shiki": "^4.6.0"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.1.14",
+    "@types/katex": "^0.16.8",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.4",
