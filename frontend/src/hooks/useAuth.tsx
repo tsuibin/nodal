@@ -19,8 +19,8 @@ import {
   type ReactNode,
 } from 'react'
 
-import { authApi } from '../api/auth'
-import { ApiError, onTokenChange, onUnauthorized, tokenStore } from '../api/http'
+import { authApi } from '../services/auth'
+import { ApiError, onTokenChange, onUnauthorized, tokenStore } from '../services/http'
 import type {
   AuthUser,
   GuestInfo,

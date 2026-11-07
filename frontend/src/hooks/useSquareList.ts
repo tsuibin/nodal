@@ -3,8 +3,8 @@
  * 换筛选条件会重置到第 1 页；loadMore 追加下一页。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ApiError } from '../api/http'
-import { squareApi, type SquareListQuery } from '../api/square'
+import { ApiError } from '../services/http'
+import { squareApi, type SquareListQuery } from '../services/square'
 import type { SquareItem } from '../types/square'
 
 export interface UseSquareListOptions extends SquareListQuery {

@@ -3,8 +3,8 @@
  * 未登录（游客）发表评论会收到 1003，页面据此弹登录框。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ApiError } from '../api/http'
-import { squareApi } from '../api/square'
+import { ApiError } from '../services/http'
+import { squareApi } from '../services/square'
 import type { CanvasComment } from '../types/square'
 
 export interface UseCanvasCommentsResult {

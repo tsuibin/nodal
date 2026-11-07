@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+/*
+ * Nodal 视觉令牌
+ * - 主色 #4060FF；关系色：反例 #ff6b6b / 佐证 #36c9a5 / 并行假设 #ffc857
+ * - 浅色背景 #f7f8fa，深色背景 #111318
+ * - 字体：Inter（英文）、思源黑体 SC（中文）、JetBrains Mono（代码）
+ * Tailwind v4 的 @theme 会把 --color- 前缀变量自动生成为背景、文字、边框工具类。
+ */
+@theme {
+  --color-brand: #4060ff;
+  --color-brand-strong: #2f4be0;
+  --color-brand-soft: #eef1ff;
+  --color-counter: #ff6b6b;
+  --color-counter-soft: #fff0f0;
+  --color-evidence: #36c9a5;
+  --color-evidence-soft: #e9fbf6;
+  --color-hypothesis: #ffc857;
+  --color-hypothesis-soft: #fff8e6;
+  --color-canvas-light: #f7f8fa;
+  --color-canvas-dark: #111318;
+  --color-ink: #111318;
+  --color-ink-soft: #303542;
+
+  --font-sans: "Inter", "Noto Sans SC", "思源黑体 SC", "PingFang SC",
+    "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", Consolas, "Liberation Mono",
+    monospace;
+
+  --radius-card: 16px;
+  --shadow-card: 0 1px 2px rgb(17 19 24 / 0.04), 0 8px 28px rgb(17 19 24 / 0.06);
+  --shadow-card-hover: 0 4px 12px rgb(17 19 24 / 0.08), 0 18px 44px rgb(17 19 24 / 0.1);
+}
+
+/* 双主题：根节点 .dark 生效，默认跟随系统（由 ThemeProvider 写入 class） */
+:root {
+  color-scheme: light;
+  --nodal-bg: #f7f8fa;
+  --nodal-surface: #ffffff;
+  --nodal-surface-soft: #f1f3f8;
+  --nodal-border: #e4e7ef;
+  --nodal-text: #111318;
+  --nodal-muted: #687083;
+  --nodal-shadow: 0 1px 2px rgb(17 19 24 / 0.04), 0 10px 30px rgb(17 19 24 / 0.06);
+}
+
+.dark {
+  color-scheme: dark;
+  --nodal-bg: #111318;
+  --nodal-surface: #181b22;
+  --nodal-surface-soft: #20242d;
+  --nodal-border: #2b303b;
+  --nodal-text: #f5f7fb;
+  --nodal-muted: #9aa3b5;
+  --nodal-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 16px 40px rgb(0 0 0 / 0.35);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    margin: 0;
+    min-width: 320px;
+    background: var(--nodal-bg);
+    color: var(--nodal-text);
+    transition: background-color 180ms ease, color 180ms ease;
+  }
+
+  ::selection {
+    background: rgb(64 96 255 / 0.22);
+  }
+
+  button,
+  a,
+  input,
+  textarea,
+  select {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    outline: 2px solid #4060ff;
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .nodal-card {
+    background: var(--nodal-surface);
+    border: 1px solid var(--nodal-border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--nodal-shadow);
+  }
+
+  .nodal-muted {
+    color: var(--nodal-muted);
+  }
+
+  .nodal-grid-bg {
+    background-image:
+      linear-gradient(to right, rgb(64 96 255 / 0.055) 1px, transparent 1px),
+      linear-gradient(to bottom, rgb(64 96 255 / 0.055) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .nodal-fade-in {
+    animation: nodal-fade-in 220ms ease-out both;
+  }
+
+  .nodal-rise-in {
+    animation: nodal-rise-in 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes nodal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes nodal-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 细滚动条，避免深色主题下出现刺眼的系统滚动条 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(64 96 255 / 0.28) transparent;
+}

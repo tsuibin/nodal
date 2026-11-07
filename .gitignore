@@ -6,8 +6,8 @@ server/bin/
 *.db-wal
 
 # 前端
-web/node_modules/
-web/dist/
+frontend/node_modules/
+frontend/dist/
 node_modules/
 
 # 环境与编辑器

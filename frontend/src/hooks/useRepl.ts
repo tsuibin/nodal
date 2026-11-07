@@ -10,8 +10,8 @@
  * - 30s 后端硬超时，同时前端显示倒计时；exit 帧带回退出码与原因。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { replApi, openReplSocket } from '../api/repl'
-import { ApiError } from '../api/http'
+import { replApi, openReplSocket } from '../services/repl'
+import { ApiError } from '../services/http'
 import type { ReplLanguage, ReplServerMessage, ReplSession } from '../types/repl'
 
 const MAX_OUTPUT = 200 * 1024

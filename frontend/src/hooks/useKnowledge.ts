@@ -6,8 +6,8 @@
  * await kb.upload(file)
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ApiError } from '../api/http'
-import { knowledgeApi } from '../api/knowledge'
+import { ApiError } from '../services/http'
+import { knowledgeApi } from '../services/knowledge'
 import type { KnowledgeFile } from '../types/knowledge'
 
 export interface UseKnowledgeFilesResult {

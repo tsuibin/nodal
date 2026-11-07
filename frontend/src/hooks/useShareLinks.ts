@@ -2,8 +2,8 @@
  * useShareLinks：画布分享链接的创建/列出/停用。
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ApiError } from '../api/http'
-import { shareApi } from '../api/share'
+import { ApiError } from '../services/http'
+import { shareApi } from '../services/share'
 import type { ShareLink, SharePermission } from '../types/square'
 
 export interface UseShareLinksResult {

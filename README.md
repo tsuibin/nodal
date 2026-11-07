@@ -1,4 +1,4 @@
-# Nodal · 模块 2 + 模块 3 + 模块 4
+# Nodal · 项目总说明（模块 1–8）
 
 模块 2：用户 / 注册登录 / JWT 鉴权（后端 Go + 前端 auth 封装）。
 模块 3：画布核心 CRUD（创建、列表、详情、全量更新、删除、分叉，含分享只读与所有者权限校验）。
@@ -72,16 +72,16 @@ nodal/
 │  │  └─ router/router.go                # 路由分组：公开 / 全局鉴权 / 仅用户
 │  ├─ .env.example
 │  └─ go.mod
-└─ web/
-   ├─ src/api/http.ts                    # axios 实例、token 存储、ApiError、拦截器
-   ├─ src/api/auth.ts                    # 5 个 auth 接口封装
-   ├─ src/api/agent.ts                   # Agent 模板 CRUD
-   ├─ src/api/model.ts                   # 模型目录 + API Key 管理
-   ├─ src/api/infer.ts                   # fetch + ReadableStream 解析 SSE 推演流
-   ├─ src/api/knowledge.ts               # 知识库上传/列表/删除 + 挂载
-   ├─ src/api/rag.ts                     # RAG 检索
-   ├─ src/api/square.ts                  # 发布/广场/点赞/评论
-   ├─ src/api/share.ts                   # 分享链接创建/校验/Fork
+└─ frontend/
+   ├─ src/services/http.ts                    # axios 实例、token 存储、ApiError、拦截器
+   ├─ src/services/auth.ts                    # 5 个 auth 接口封装
+   ├─ src/services/agent.ts                   # Agent 模板 CRUD
+   ├─ src/services/model.ts                   # 模型目录 + API Key 管理
+   ├─ src/services/infer.ts                   # fetch + ReadableStream 解析 SSE 推演流
+   ├─ src/services/knowledge.ts               # 知识库上传/列表/删除 + 挂载
+   ├─ src/services/rag.ts                     # RAG 检索
+   ├─ src/services/square.ts                  # 发布/广场/点赞/评论
+   ├─ src/services/share.ts                   # 分享链接创建/校验/Fork
    ├─ src/hooks/useSquareList.ts         # 广场分页 + 标签筛选
    ├─ src/hooks/useCanvasComments.ts     # 评论列表 + 发表 + 删除
    ├─ src/hooks/useShareLinks.ts         # 分享链接创建/停用
@@ -272,7 +272,7 @@ go run ./cmd/server             # 默认 :8080，sqlite 落在 server/data/nodal
 ## 六、前端接入
 
 ```bash
-cd web && npm install
+cd frontend && npm install
 ```
 
 `.env` 里 `VITE_API_BASE_URL=/api`，开发期在 vite 配 proxy 到 `:8080`：
@@ -640,7 +640,7 @@ data: {"run_id":"ikKxV_1fblW7","node_count":3,"edge_count":2,"skipped":0}
 
 ### 10.7 前端增量渲染
 
-`src/api/infer.ts` 用 `fetch + ReadableStream` 自己解析 SSE（`EventSource` 只能 GET、不能带 `Authorization` 和 JSON body）。
+`src/services/infer.ts` 用 `fetch + ReadableStream` 自己解析 SSE（`EventSource` 只能 GET、不能带 `Authorization` 和 JSON body）。
 
 ```tsx
 const infer = useInferStream({
@@ -805,12 +805,12 @@ KnowledgeChunk{ID, OwnerKey, FileID, ChunkIndex, Content, EmbeddingJSON, Created
 
 ### 11.6 前端封装
 
-- `web/src/types/knowledge.ts`：`KnowledgeFile`、`MountView`、`RetrieveResult` 等；
-- `web/src/api/knowledge.ts`：上传（`FormData`，超时 120s）、列表、删除、挂载/查询挂载/解除；
-- `web/src/api/rag.ts`：`retrieve`；
-- `web/src/hooks/useKnowledge.ts`：列表 + 上传 + 删除，维护 loading/uploading/error；
-- `web/src/hooks/useKnowledgeMount.ts`：按 `canvasId` 自动回显挂载，提供 `setMount/unmount/retrieve`；
-- `web/src/api/http.ts` 的 `AUTH_CODES` 已补 `4001–4005`。
+- `frontend/src/types/knowledge.ts`：`KnowledgeFile`、`MountView`、`RetrieveResult` 等；
+- `frontend/src/services/knowledge.ts`：上传（`FormData`，超时 120s）、列表、删除、挂载/查询挂载/解除；
+- `frontend/src/services/rag.ts`：`retrieve`；
+- `frontend/src/hooks/useKnowledge.ts`：列表 + 上传 + 删除，维护 loading/uploading/error；
+- `frontend/src/hooks/useKnowledgeMount.ts`：按 `canvasId` 自动回显挂载，提供 `setMount/unmount/retrieve`；
+- `frontend/src/services/http.ts` 的 `AUTH_CODES` 已补 `4001–4005`。
 
 ### 11.7 自测记录（2026-11-07）
 
@@ -931,13 +931,13 @@ CanvasShareLink{ID, CanvasID, Token(unique), Permission(read|fork), CreatedBy,
 
 ### 12.5 前端封装
 
-- `web/src/types/canvas.ts`：`CanvasView`、`CanvasPermissions`；
-- `web/src/types/square.ts`：`SquareItem`、`CanvasComment`、`ShareLink`、`ShareResolveResult`；
-- `web/src/api/square.ts`：发布/下架、广场列表、点赞、评论增删查；
-- `web/src/api/share.ts`：创建/列出/停用链接、公开解析、按链接 Fork；
-- `web/src/hooks/useSquareList.ts`：分页 + 标签筛选 + 加载更多；
-- `web/src/hooks/useCanvasComments.ts`：评论列表 + 发表 + 删除；
-- `web/src/hooks/useShareLinks.ts`：分享链接创建/停用；
+- `frontend/src/types/canvas.ts`：`CanvasView`、`CanvasPermissions`；
+- `frontend/src/types/square.ts`：`SquareItem`、`CanvasComment`、`ShareLink`、`ShareResolveResult`；
+- `frontend/src/services/square.ts`：发布/下架、广场列表、点赞、评论增删查；
+- `frontend/src/services/share.ts`：创建/列出/停用链接、公开解析、按链接 Fork；
+- `frontend/src/hooks/useSquareList.ts`：分页 + 标签筛选 + 加载更多；
+- `frontend/src/hooks/useCanvasComments.ts`：评论列表 + 发表 + 删除；
+- `frontend/src/hooks/useShareLinks.ts`：分享链接创建/停用；
 - `AUTH_CODES` 已补 `6001–6005`。
 
 ### 12.6 自测记录（2026-11-07）
@@ -1136,7 +1136,100 @@ await repl.run(code, 'python')
 - 会话元数据不落库，服务重启后全部丢失；仅保留创建/关闭的结构化日志用于审计。
 - `CodeNodeRunner` 是最小面板，未做 ANSI/xterm 渲染与主题适配；模块 9 接入画布时再升级。
 
-## 十四、后续模块怎么接
+## 十四、模块 8：前端首页 / 资源库 / 广场
+
+### 14.1 范围
+
+本模块交付三张静态页面与公共组件，不包含画布页（模块 9）：
+
+| 路由 | 页面 | 说明 |
+|---|---|---|
+| `/` | 首页 | 品牌主张、关系类型、核心能力、最新广场画布 |
+| `/library` | 资源库 | 我的画布 / 知识库 / Agent 模板三个 Tab |
+| `/square` | 公共广场 | 搜索、标签筛选、最新/最热、点赞、加载更多 |
+
+`/canvas/:id` 与 `/share/:token` 在模块 8 只放占位页，模块 9/10 接入 ReactFlow 与分享阅读。
+
+### 14.2 技术落地
+
+- React 18 + TypeScript + Vite 5；
+- Tailwind CSS v4（`@tailwindcss/vite` + `@import "tailwindcss"`），不引入额外 UI 框架；
+- 路由 `react-router-dom`；
+- 主题：`ThemeProvider` 写入 `<html class="dark">`，`localStorage` 持久化，支持跟随系统；
+- 请求层复用模块 2–7 的 axios 封装，`src/api` 已迁移为 `src/services`；
+- 颜色/字体全部来自视觉 brief：主色 `#4060FF`、反例 `#ff6b6b`、佐证 `#36c9a5`、并行假设 `#ffc857`、浅背景 `#f7f8fa`、深背景 `#111318`。
+
+### 14.3 目录
+
+```text
+frontend/
+├─ index.html
+├─ vite.config.ts
+├─ package.json
+├─ src/
+│  ├─ main.tsx                 # ThemeProvider + AuthProvider + Router
+│  ├─ App.tsx                  # 路由表
+│  ├─ index.css                # Tailwind v4 令牌与全局样式
+│  ├─ pages/
+│  │  ├─ HomePage.tsx
+│  │  ├─ LibraryPage.tsx
+│  │  ├─ SquarePage.tsx
+│  │  └─ PlaceholderPage.tsx
+│  ├─ components/
+│  │  ├─ AppShell.tsx          # 顶栏 / 导航 / 登录态 / 页脚
+│  │  ├─ LoginModal.tsx        # 登录注册弹窗
+│  │  ├─ LoginModalProvider.tsx
+│  │  ├─ CanvasCard.tsx        # 我的画布 & 广场共用卡片
+│  │  ├─ TagChip.tsx           # 标签 / 关系色
+│  │  ├─ ThemeToggle.tsx
+│  │  ├─ EmptyState.tsx
+│  │  └─ LoadingGrid.tsx
+│  ├─ hooks/
+│  │  ├─ useTheme.tsx
+│  │  ├─ useCanvasList.ts      # 我的画布分页/搜索/创建/删除
+│  │  ├─ useAgentList.ts
+│  │  └─ useAuth.tsx / useKnowledge.ts / useSquareList.ts ...
+│  └─ services/
+│     ├─ canvas.ts             # 模块 8 新增：画布列表/创建/删除/分叉
+│     └─ ...
+```
+
+### 14.4 页面行为
+
+- 首页「开始推演」：已登录直接 `POST /api/canvas` 创建空白画布；未登录先领取游客会话，再创建，游客画布 7 天内有效；
+- 资源库「我的画布」：`GET /api/canvas/list?scope=mine`，关键词 280ms 防抖，支持删除；
+- 资源库「知识库」：`GET/POST/DELETE /api/knowledge/*`，游客点击 Tab 直接唤起登录弹窗；
+- 资源库「Agent 模板」：`GET /api/agent/list`，展示模型与系统提示词摘要；
+- 广场：`GET /api/square/list`，标签筛选、搜索、`latest/hot` 排序，`POST /api/canvas/:id/like` 即时更新点赞；
+- 登录 / 注册：`POST /api/auth/login|register`，成功后写入 JWT，全局导航即时刷新；
+- 主题切换：浅色 / 深色即时切换，刷新后保留。
+
+### 14.5 本地自测
+
+```bash
+cd frontend
+npm install
+npm run typecheck
+npm run build
+npm run dev      # 默认 http://127.0.0.1:5173，/api 代理到 :8080
+```
+
+已验证：
+
+- `npx tsc --noEmit` 通过；
+- `npm run build` 通过（118 modules，CSS 38.6KB / JS 279KB，已检查品牌色工具类生成）；
+- 页面空状态、加载骨架、登录门槛、游客创建画布路径均已覆盖；
+- Chromium headless 1440×1100 实拍首页、广场、资源库与深色首页，导航、卡片、标签、主题切换均正常；登录弹窗与新建按钮由 TS 类型与代码路径覆盖，模块 9 接入画布后再做完整交互回归。
+
+### 14.6 已知边界
+
+- 当前仓库仍保留 `server/`、`frontend/` 两段；后端目录迁移到 `backend/` 留待结构重构分支，避免模块 8 同时改 Go import 路径；
+- `docs/PRD.md`、`docs/visual-spec.md` 当前不在仓库，页面视觉按本轮 brief 的品牌色/字体实现，docs 补齐后需做一次规范核对；
+- 广场卡片点击进入模块 9 画布页占位，暂不能阅读画布内容；
+- 登录弹窗未做找回密码/邮箱验证，后端当前也未提供；
+- 图片头像使用首字母占位，头像上传在后续模块补。
+
+## 十五、后续模块怎么接
 
 ```go
 authed.GET("/canvas/:id/versions", canvasHandler.ListVersions)   // 版本历史
