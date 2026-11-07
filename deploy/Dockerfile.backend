@@ -2,9 +2,9 @@
 # 注意：默认关闭 REPL（NODAL_REPL_ENABLED=false）；容器内 unshare 需要额外 privileged/内核配置。
 FROM golang:1.23-bookworm AS build
 WORKDIR /src
-COPY server/go.mod server/go.sum ./
+COPY backend/go.mod backend/go.sum ./
 RUN go mod download
-COPY server/ ./
+COPY backend/ ./
 RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/nodal ./cmd/server
 
 FROM debian:bookworm-slim

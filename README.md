@@ -11,7 +11,7 @@
 模块 9：无限画布工作台（ReactFlow、五种节点、四种关系、Monaco/KaTeX/Markdown 编辑器、撤销重做、SSE 增量渲染）。
 模块 10：Demo 画布、全局异常与 toast、接口类型补全、前端/接口/部署文档。
 
-文档入口：[`docs/API.md`](docs/API.md)（接口契约） · [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)（部署） · [`frontend/README.md`](frontend/README.md)（前端说明）。
+文档入口：[`docs/PRD.md`](docs/PRD.md)（产品） · [`docs/visual-spec.md`](docs/visual-spec.md)（视觉） · [`docs/ppt-outline.md`](docs/ppt-outline.md)（汇报） · [`docs/API.md`](docs/API.md)（接口） · [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)（部署） · [`frontend/README.md`](frontend/README.md)（前端）。
 
 后端按 **model / handler / service / middleware** 分层，所有接口共用一套响应体与错误码；
 JWT 鉴权是全局中间件，游客也能拥有自己的临时画布。
@@ -20,107 +20,46 @@ JWT 鉴权是全局中间件，游客也能拥有自己的临时画布。
 
 ```
 nodal/
-├─ server/
+├─ backend/                              # Go 后端（module github.com/nodal/nodal-server）
 │  ├─ cmd/server/main.go                 # 入口：配置 → DB → 迁移 → 装配 → 优雅退出
-│  ├─ internal/
-│  │  ├─ config/config.go                # 环境变量配置 + 生产环境安全校验
-│  │  ├─ db/db.go                        # GORM 连接（sqlite/mysql/postgres）+ AutoMigrate
-│  │  ├─ model/user.go                  # User 模型（bcrypt 哈希、软删除、状态）
-│  │  ├─ model/guest_session.go         # 游客临时会话模型
-│  │  ├─ model/canvas.go                # Canvas 模型（React Flow 文档 + 分享字段）
-│  │  ├─ model/agent_template.go        # Agent 模板（owner+name 唯一）
-│  │  ├─ model/model_credential.go      # 用户模型 API Key（只存密文 + 尾号）
-│  │  ├─ model/knowledge_file.go        # 知识库文件（owner 隔离、状态/切片数）
-│  │  ├─ model/knowledge_chunk.go       # 文本切片 + embedding（pgvector / JSON 兜底）
-│  │  ├─ model/canvas_like.go           # 点赞记录（canvas + user 唯一）
-│  │  ├─ model/canvas_comment.go        # 评论（软删除）
-│  │  ├─ model/canvas_share_link.go     # 分享链接（read / fork 权限、可停用/过期）
-│  │  ├─ token/token.go                  # JWT 签发/解析，user 与 guest 两种身份
-│  │  ├─ apperr/apperr.go                # 业务错误码 + 统一 error 类型
-│  │  ├─ response/response.go            # 统一响应体（成功/失败同一结构）
-│  │  ├─ service/auth_service.go         # 注册、登录、me、改资料、游客会话、过期清理
-│  │  ├─ service/canvas_service.go      # 画布 CRUD、分叉、列表、权限判定
-│  │  ├─ service/canvas_document.go     # React Flow 文档校验/归一化/标签/可见性
-│  │  ├─ service/agent_service.go       # Agent 模板 CRUD（仅注册用户、按 owner 隔离）
-│  │  ├─ service/credential_service.go  # API Key 加密保存 / 脱敏列出 / 按 provider 取用
-│  │  ├─ service/infer_service.go       # 推演编排：组 prompt、调模型、解析 JSONL、只增不改
-│  │  ├─ service/knowledge_extract.go   # PDF/DOCX/HTML/纯文本抽取 + 清洗 + 字符窗口切片
-│  │  ├─ service/knowledge_service.go   # 上传→解析→切片→向量化→落库，失败全量回滚
-│  │  ├─ service/rag_service.go         # 画布临时挂载（内存）+ 只召回已挂载文件
-│  │  ├─ service/square_service.go      # 发布/下架、广场分页筛选、点赞切换、评论
-│  │  ├─ service/share_service.go       # read/fork 分享链接创建、校验、停用、Fork
-│  │  ├─ embed/embed.go                 # 向量模型注册表（mock / openai）
-│  │  ├─ embed/mock.go                  # 确定性词袋哈希向量（免 Key）
-│  │  ├─ embed/openai.go                # OpenAI /embeddings 适配
-│  │  ├─ vector/vector.go               # 向量存储：pgvector + JSON 兜底
-│  │  ├─ secretbox/secretbox.go         # AES-256-GCM 加解密（AAD 绑定 owner+provider）
-│  │  ├─ llm/llm.go                     # 模型适配器统一接口 + Router
-│  │  ├─ llm/catalog.go                 # 内置模型目录（id/provider/baseURL/maxTokens）
-│  │  ├─ llm/sse.go                     # SSE 帧解析（按空行分帧、跳过心跳）
-│  │  ├─ llm/openai.go                  # OpenAI 兼容协议（覆盖 openai/deepseek/moonshot/zhipu/qwen）
-│  │  ├─ llm/anthropic.go               # Anthropic Messages 协议
-│  │  ├─ llm/mock.go                    # 本地模拟模型（免 key，3 节点 + 2 边）
-│  │  ├─ handler/auth_handler.go         # HTTP 适配 + 参数校验错误转换
-│  │  ├─ handler/canvas_handler.go      # 画布路由的 HTTP 适配 + 请求体限流
-│  │  ├─ handler/agent_handler.go       # Agent CRUD 的 HTTP 适配
-│  │  ├─ handler/model_handler.go       # 模型目录 + API Key 管理
-│  │  ├─ handler/infer_handler.go       # SSE 推演入口（超时、错误事件、心跳）
-│  │  ├─ handler/knowledge_handler.go   # 知识库上传/列表/删除 + 画布挂载
-│  │  ├─ handler/rag_handler.go         # RAG 检索入口
-│  │  ├─ handler/square_handler.go      # 广场/点赞/评论入口
-│  │  ├─ handler/share_handler.go       # 分享链接创建、公开解析与 Fork
-│  │  ├─ handler/repl_handler.go        # REPL 创建 + WebSocket ↔ PTY 桥接
-│  │  ├─ repl/runtime.go                # 沙箱运行时抽象（local / firecracker）
-│  │  ├─ repl/local.go                  # 用户命名空间 + 网络/挂载/PID 隔离 + PTY
-│  │  ├─ repl/firecracker.go            # Firecracker launcher 合约与 VM 接入点
-│  │  ├─ repl/session.go                # 单会话生命周期、超时、进程组回收
-│  │  ├─ repl/manager.go                # 会话登记、并发配额、审计日志
-│  │  ├─ handler/sse.go                 # text/event-stream 写帧 / flush / 心跳
-│  │  ├─ middleware/auth.go              # 全局 JWT 鉴权 / RequireUser / Optional
-│  │  ├─ middleware/error.go             # RequestID、访问日志、统一错误出口
-│  │  └─ router/router.go                # 路由分组：公开 / 全局鉴权 / 仅用户
-│  ├─ .env.example
+│  ├─ config/                            # 环境变量配置 + 生产安全校验
+│  ├─ db/                                # GORM 连接 + AutoMigrate
+│  ├─ model/                             # User / Guest / Canvas / Agent / Knowledge / 广场互动
+│  ├─ service/                           # auth / canvas / agent / infer / knowledge / rag / square / share / demo
+│  ├─ handler/                           # HTTP 适配 + SSE 帧
+│  ├─ middleware/                         # 全局 JWT / RequireUser / 错误出口
+│  ├─ router/router.go                   # 公开 / 全局鉴权 / 仅用户三组路由
+│  ├─ replsandbox/                       # REPL 隔离沙箱（local / firecracker launcher）
+│  ├─ migrate/                           # 0001_init.sql（PostgreSQL 初始化参考）
+│  ├─ token/ apperr/ response/ secretbox/ embed/ llm/ vector/
 │  └─ go.mod
-├─ frontend/
-   ├─ README.md
-   ├─ src/services/http.ts                    # axios 实例、token 存储、ApiError、拦截器
-   ├─ src/services/auth.ts                    # 5 个 auth 接口封装
-   ├─ src/services/agent.ts                   # Agent 模板 CRUD
-   ├─ src/services/model.ts                   # 模型目录 + API Key 管理
-   ├─ src/services/infer.ts                   # fetch + ReadableStream 解析 SSE 推演流
-   ├─ src/services/knowledge.ts               # 知识库上传/列表/删除 + 挂载
-   ├─ src/services/rag.ts                     # RAG 检索
-   ├─ src/services/square.ts                  # 发布/广场/点赞/评论
-   ├─ src/services/share.ts                   # 分享链接创建/校验/Fork
-   ├─ src/hooks/useSquareList.ts         # 广场分页 + 标签筛选
-   ├─ src/hooks/useCanvasComments.ts     # 评论列表 + 发表 + 删除
-   ├─ src/hooks/useShareLinks.ts         # 分享链接创建/停用
-   ├─ src/types/canvas.ts                # CanvasView / 权限类型
-   ├─ src/types/square.ts                # 广场/评论/分享类型
-   ├─ src/hooks/useKnowledge.ts          # 知识库列表 + 上传 + 删除
-   ├─ src/hooks/useKnowledgeMount.ts     # 画布挂载回显 / 设置 / 解除 / 检索
-   ├─ src/types/knowledge.ts             # 知识库 / 挂载 / 检索类型
-   ├─ src/hooks/useInferStream.ts        # 推演流 hook，增量 append 节点/边
-   ├─ src/hooks/useAuth.tsx              # AuthProvider + useAuth + useRequireUser
-   ├─ src/hooks/useRequest.ts            # 通用 loading/error/防竞态 hook
-   ├─ src/types/auth.ts                  # 与后端出参一一对应的类型
-   ├─ src/types/agent.ts                 # Agent / 模型 / 凭证类型
-   ├─ src/types/infer.ts                 # 推演请求、SSE 事件、React Flow 结构类型
-   └─ .env.example
+├─ frontend/                             # React + TS 前端
+│  ├─ README.md
+│  ├─ src/pages/                         # 首页 / 资源库 / 广场 / 画布
+│  ├─ src/components/ + components/canvas/
+│  ├─ src/hooks/ services/ store/ types/ lib/
+│  └─ vite.config.ts
 ├─ docs/
-│  ├─ API.md                             # 模块10：接口契约总表
-│  └─ DEPLOYMENT.md                      # 模块10：部署文档
-├─ deploy/                               # 模块10：Dockerfile 与 Nginx 参考（未真机验证）
-├─ docker-compose.yml                    # 模块10：参考编排（未真机验证）
+│  ├─ PRD.md                             # 产品需求
+│  ├─ visual-spec.md                     # 视觉规范
+│  ├─ ppt-outline.md                     # 汇报大纲
+│  ├─ API.md                             # 接口契约
+│  └─ DEPLOYMENT.md                      # 部署文档
+├─ scripts/                              # 本地启动 / 测试 / 数据库初始化
+├─ deploy/                               # Dockerfile.backend / Dockerfile.frontend / nginx.conf
+├─ .github/workflows/ci.yml              # CI
+├─ docker-compose.yml                    # 参考编排（未真机验证）
+├─ AI_BUILD_GUIDE.md
 └─ README.md
+```
 ```
 
 ## 二、跑起来
 
 ```bash
-cd server
+cd backend
 cp .env.example .env            # 可选；不配也有本地默认值
-go run ./cmd/server             # 默认 :8080，sqlite 落在 server/data/nodal.db
+go run ./cmd/server             # 默认 :8080，sqlite 落在 backend/data/nodal.db
 ```
 
 默认配置即可本地开发；生产必须显式设置 `NODAL_JWT_SECRET`（≥32 位），否则启动直接报错。
@@ -1239,7 +1178,7 @@ npm run dev      # 默认 http://127.0.0.1:5173，/api 代理到 :8080
 
 ### 14.6 已知边界
 
-- 当前仓库仍保留 `server/`、`frontend/` 两段；后端目录迁移到 `backend/` 留待结构重构分支，避免模块 8 同时改 Go import 路径；
+- 仓库已对齐 `backend/`、`frontend/`、`docs/`、`scripts/` 的 monorepo 结构；
 - `docs/PRD.md`、`docs/visual-spec.md` 当前不在仓库，页面视觉按本轮 brief 的品牌色/字体实现，docs 补齐后需做一次规范核对；
 - 广场卡片已可进入模块 9 画布页；分享链接的只读阅读页仍是占位，模块 10 接入；
 - 登录弹窗未做找回密码/邮箱验证，后端当前也未提供；
@@ -1337,7 +1276,7 @@ VITE_DEV_API_TARGET=http://127.0.0.1:18087 npm run dev -- --port 5173
 联调后端（SQLite 演示配置）：
 
 ```bash
-cd server
+cd backend
 NODAL_HTTP_ADDR=:18087 \
 NODAL_DB_DRIVER=sqlite \
 NODAL_DB_DSN=/tmp/nodal-m9/nodal.db \
@@ -1379,7 +1318,7 @@ GOTOOLCHAIN=local go run ./cmd/server
 
 实现方式：
 
-- `server/internal/service/demo_service.go` 定义模板，复用 `CanvasService.Create`，Demo 同样经过 `normalizeDocument` 校验；
+- `backend/service/demo_service.go` 定义模板，复用 `CanvasService.Create`，Demo 同样经过 `normalizeDocument` 校验；
 - `AuthService.Register` 建用户后 best-effort 种 Demo，失败只记日志，不影响注册；
 - 新增 `POST /api/demo/seed` 幂等接口：该身份已有画布返回 `created=0`，供老账号/游客兜底；
 - 资源库首次加载完成且「0 张画布、无关键词」时，前端调用种子接口并刷新；
@@ -1411,6 +1350,12 @@ GOTOOLCHAIN=local go run ./cmd/server
 | `frontend/README.md` | 前端架构、脚本、环境变量、画布架构、Monaco 离线、Demo、全局异常、类型约定 |
 | `docs/API.md` | 全部接口、鉴权、游客、SSE/WS 协议、错误码、数据约束 |
 | `docs/DEPLOYMENT.md` | 本地/生产配置、PostgreSQL+pgvector、systemd、Nginx/Caddy、Docker 参考、上线检查、REPL 边界 |
+| `docs/PRD.md` | 产品定位、用户、数据模型、功能、权限、验收、指标与边界 |
+| `docs/visual-spec.md` | 品牌色/主题令牌、字体、间距、节点/边、组件、动效、可访问性 |
+| `docs/ppt-outline.md` | 12 页项目汇报大纲 |
+| `backend/migrate/` | PostgreSQL 初始化 SQL + AutoMigrate 关系说明 |
+| `scripts/` | `dev.sh` / `test.sh` / `db-init.sh` / `smoke.sh` |
+| `.github/workflows/ci.yml` | 后端 gofmt/vet/test + 前端 typecheck/build |
 
 ### 17.5 部署参考
 
@@ -1427,7 +1372,7 @@ GOTOOLCHAIN=local go run ./cmd/server
 ### 17.6 本地自测
 
 ```bash
-cd server && GOTOOLCHAIN=local go vet ./... && GOTOOLCHAIN=local go test ./...
+cd backend && GOTOOLCHAIN=local go vet ./... && GOTOOLCHAIN=local go test ./...
 cd ../frontend && npm run typecheck && npm run build
 ```
 
@@ -1444,7 +1389,7 @@ cd ../frontend && npm run typecheck && npm run build
 ### 17.7 已知边界
 
 - 分享只读页 `/share/:token` 仍是占位，模块 10 未新增独立阅读器；
-- 画布仍分列存储，未切 `content_json`；后端仍是 `server/`，未迁 `backend/`；
+- 画布仍分列存储，未切 `content_json`；
 - Docker/PostgreSQL/pgvector 无真机验证；Redis 未接入；
 - `NODAL_EMBED_MODEL=mock/embed` 只用于演示，生产需替换真实 embedding 模型并核对维度；
 - 老账号已有画布时不会强制插入 Demo；清空全部画布后才会兜底补种。
@@ -1459,3 +1404,23 @@ authed.POST("/canvas/:id/share-token", canvasHandler.ShareToken) // 免登录分
 - 版本/协作：`canvas_versions` 存快照（`nodes/edges/viewport` + `revision`），乐观锁用 `updated_at` 或自增 `revision`。
 - 分享链接：为 `share_mode=link` 生成短期签名 token（`?share=<token>`），避免仅靠画布 ID 扫号。
 - 游客转正：注册成功后按 `g:<gid>` 改写 `owner_key`，把临时画布并入账号。
+
+## 十九、目录对齐（refactor/final-layout）
+
+模块 1–10 完成后，仓库按目标 monorepo 结构做了一次纯搬迁，不改变接口行为：
+
+- `server/` → `backend/`；
+- Go 包从 `backend/internal/*` 提升到 `backend/*`，`repl` 目录/包统一为 `replsandbox`；
+- 新增 `backend/migrate/0001_init.sql`（PostgreSQL 初始化参考，运行期仍以 GORM AutoMigrate 为准）；
+- 新增 `scripts/`（`dev.sh` / `test.sh` / `db-init.sh` / `smoke.sh`）；
+- 新增 `.github/workflows/ci.yml`；
+- 新增 `docs/PRD.md`、`docs/visual-spec.md`、`docs/ppt-outline.md`；
+- `deploy/Dockerfile.backend`、README、API/部署文档中的路径同步更新。
+
+验证：
+
+- `go build ./...`、`go vet ./...`、`go test ./...` 全部通过；
+- 从 `backend/` 启动 SQLite 实例（`:18089`）→ 注册 → 自动生成 2 张 Demo（各 6 节点 6 连线）；
+- 前端目录未变，`npm run typecheck` / `npm run build` 仍通过。
+
+边界：Go module 名仍为 `github.com/nodal/nodal-server`；迁移脚本未在真 PostgreSQL 上执行验证。

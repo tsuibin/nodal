@@ -9,12 +9,12 @@
 - 模块代码、测试、文档全部在该分支提交，自测通过后合并回 `main`。
 - 合并使用 `git merge --no-ff`，保留模块边界；不使用 `push --force`，不改写已合并历史。
 
-当前状态（模块 10 开发中，分支 `feature/module-10-wrap-up`）：
+当前状态：
 
 ```text
-main（模块 9 已合并，HEAD 7a771da）
-└── feature/module-10-wrap-up
-    └── feat: 完成模块10 收尾
+main：模块 1–10 已完成；目录已对齐目标 monorepo 结构
+历史模块分支：feature/module-7-repl … feature/module-10-wrap-up
+结构重构分支：refactor/final-layout（backend/ + replsandbox + scripts + CI + migrate）
 ```
 
 仓库在模块 7 阶段初始化，因此首个功能提交同时导入了模块 1–6 的既有代码；之后每个模块严格按上述流程执行。
@@ -35,56 +35,46 @@ chore: 更新依赖与构建脚本
 
 ## 3. 目录约定
 
-当前可运行结构（模块 1–10 已落盘）：
+当前可运行结构（模块 1–10 已落盘，目录已对齐目标树）：
 
 ```text
 nodal/
-├── server/              # Go 后端（module github.com/nodal/nodal-server）
-│   ├── cmd/server/      # 入口
-│   └── internal/
-│       ├── handler/     # HTTP 适配层
-│       ├── service/     # 业务编排
-│       ├── model/       # GORM 模型
-│       ├── middleware/  # JWT / 错误出口
-│       ├── repl/        # 模块7 沙箱（目标树中的 replsandbox）
-│       ├── router/      # 路由分组
-│       └── ...
-├── frontend/                 # React + TS 前端
+├── backend/                 # Go 后端（module github.com/nodal/nodal-server）
+│   ├── cmd/server/          # 入口
+│   ├── handler/             # HTTP 适配层
+│   ├── service/             # 业务编排
+│   ├── model/               # GORM 模型
+│   ├── middleware/          # JWT / 错误出口
+│   ├── replsandbox/         # 模块7 沙箱（local / firecracker）
+│   ├── router/              # 路由分组
+│   ├── migrate/             # PostgreSQL 初始化 SQL + 用法说明
+│   ├── config/ db/ embed/ llm/ vector/ token/ response/ apperr/ secretbox/
+│   └── go.mod
+├── frontend/                # React + TS 前端
+│   ├── README.md
+│   ├── package.json
 │   └── src/
-│       ├── services/    # 请求封装（模块 8 由 api/ 迁入）
-│       ├── hooks/       # 数据/流式 hook
-│       ├── types/       # 接口 TS 类型
-│       ├── components/canvas/  # 模块9 节点/边/编辑器/面板
-│       ├── pages/       # 首页/资源库/广场/画布
-│       └── types/       # 接口 TS 类型
+│       ├── pages/           # 首页 / 资源库 / 广场 / 画布
+│       ├── components/      # 通用组件 + canvas/
+│       ├── hooks/           # 数据 / 流式 / 鉴权 hook
+│       ├── services/        # HTTP / SSE / WS 封装
+│       └── store/           # 画布撤销重做
 ├── docs/
-│   ├── API.md           # 模块10 接口契约
-│   └── DEPLOYMENT.md    # 模块10 部署文档
-├── deploy/              # 模块10 Dockerfile / Nginx 参考
-├── docker-compose.yml   # 模块10 参考编排（未真机验证）
-├── README.md
-└── frontend/README.md   # 模块10 前端说明
+│   ├── PRD.md               # 产品需求（当前实现的契约化整理）
+│   ├── visual-spec.md       # 视觉规范
+│   ├── ppt-outline.md       # 汇报大纲
+│   ├── API.md               # 接口契约
+│   └── DEPLOYMENT.md        # 部署文档
+├── scripts/                 # 本地启动 / 测试 / 数据库初始化
+├── deploy/                  # Dockerfile.backend / Dockerfile.frontend / nginx.conf
+├── .github/workflows/       # CI：后端 vet/test + 前端 typecheck/build
+├── docker-compose.yml       # 参考编排（未真机验证）
+├── AI_BUILD_GUIDE.md
+└── README.md
 ```
 
-目标产品树（`backend/`、`scripts/.github/workflows`）仍待结构重构分支补齐；`frontend/` 已在模块 8 落位，`docs/` 与部署文件已在模块 10 落位。
-**不建议在模块开发中途整体改目录**：Go import 路径、前端相对路径、README 与部署命令都会同时变化。
-如确需严格迁移，单独开 `refactor/migrate-layout` 分支，先完成构建/测试再合并。
-
-映射关系：
-
-| 目标树 | 当前位置 | 说明 |
-|---|---|---|
-| `backend/handler` | `server/internal/handler` | 保持 internal 包边界 |
-| `backend/service` | `server/internal/service` | 同上 |
-| `backend/model` | `server/internal/model` | 同上 |
-| `backend/middleware` | `server/internal/middleware` | 同上 |
-| `backend/migrate` | `server/internal/db` | `AutoMigrate` 入口 |
-| `backend/replsandbox` | `server/internal/repl` | 模块7 沙箱 |
-| `frontend/src/services` | `frontend/src/services` | HTTP/SSE/WS 封装 |
-| `frontend/src/pages` | 模块 8/9 新建 | 首页/资源库/广场/画布 |
-| `frontend/src/components` | `frontend/src/components` | 复用组件 |
-| `frontend/src/hooks` | `frontend/src/hooks` | 数据 hook |
-| `frontend/src/store` | 模块 9 新建 | 画布撤销重做/选择状态 |
+说明：Go module 名仍为 `github.com/nodal/nodal-server`，只改物理目录，不改 import 前缀；
+`backend/` 下各包已提升到根级（不再有 `internal/`），沙箱目录与包名统一为 `replsandbox`。
 
 ## 4. 模块状态
 
@@ -105,7 +95,7 @@ nodal/
 
 ```bash
 # 后端
-cd server
+cd backend
 gofmt -w internal cmd
 go vet ./...
 go test ./...
@@ -122,5 +112,5 @@ npm run typecheck
 
 - 每个模块结束交付两份文件：`README.md`（说明、接口、配置、自测、边界）+ `nodal-moduleN.zip`（完整代码）。
 - 先删除旧 zip，再打包，避免重复交付。
-- 打包排除：`frontend/node_modules`、`server/data`、`.env`、`dist`、`*.db`、`.git`。
+- 打包排除：`frontend/node_modules`、`backend/data`、`.env`、`dist`、`*.db`、`.git`。
 - 无法真机验证的能力（Firecracker、pgvector、真实模型 Key）必须在 README 的「已知边界」中如实标注，不得宣称已验证。

@@ -1,6 +1,6 @@
 # Nodal API
 
-本文是 Nodal 后端接口契约总表，与 `server/internal/router/router.go` 一一对应。
+本文是 Nodal 后端接口契约总表，与 `backend/router/router.go` 一一对应。
 所有示例省略了外层信封里的 `request_id`。
 
 ## 1. 通用约定
@@ -374,4 +374,4 @@ data: {"run_id":"...","node_count":3,"edge_count":2,"skipped":1}
 - 分享只读页 `/share/:token` 前端仍是占位，`GET /api/share/:token` 已可用；
 - 知识库挂载不持久化；
 - Redis 尚未接入，列表/热门排序直接查库；
-- 本文是 Markdown 契约，Go handler 尚未逐接口补 OpenAPI 注解；字段以 `server/internal/service/*.go` 的 json tag 为准。
+- 本文是 Markdown 契约，Go handler 尚未逐接口补 OpenAPI 注解；字段以 `backend/service/*.go` 的 json tag 为准。
