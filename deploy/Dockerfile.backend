@@ -1,0 +1,21 @@
+# Nodal 后端镜像（多阶段构建）
+# 注意：默认关闭 REPL（NODAL_REPL_ENABLED=false）；容器内 unshare 需要额外 privileged/内核配置。
+FROM golang:1.23-bookworm AS build
+WORKDIR /src
+COPY server/go.mod server/go.sum ./
+RUN go mod download
+COPY server/ ./
+RUN CGO_ENABLED=0 GOOS=linux go build -trimpath -ldflags="-s -w" -o /out/nodal ./cmd/server
+
+FROM debian:bookworm-slim
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends ca-certificates tzdata \
+ && rm -rf /var/lib/apt/lists/*
+COPY --from=build /out/nodal /usr/local/bin/nodal
+RUN useradd --uid 10001 --create-home --shell /usr/sbin/nologin nodal \
+ && mkdir -p /app/data/uploads \
+ && chown -R nodal:nodal /app
+WORKDIR /app
+USER nodal
+EXPOSE 8080
+ENTRYPOINT ["/usr/local/bin/nodal"]

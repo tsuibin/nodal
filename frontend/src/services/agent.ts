@@ -8,6 +8,7 @@
  * DELETE /api/agent/:id    删除（物理删除）
  */
 import { request } from './http'
+import type { DeleteResult } from '../types/api'
 import type {
   AgentListPayload,
   AgentTemplate,
@@ -32,7 +33,7 @@ export const agentApi = {
     return request<AgentTemplate>({ url: `/agent/${id}`, method: 'PUT', data: payload })
   },
 
-  remove(id: number): Promise<{ id: number; deleted: boolean }> {
-    return request<{ id: number; deleted: boolean }>({ url: `/agent/${id}`, method: 'DELETE' })
+  remove(id: number): Promise<DeleteResult> {
+    return request<DeleteResult>({ url: `/agent/${id}`, method: 'DELETE' })
   },
 }

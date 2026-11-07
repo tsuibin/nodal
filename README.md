@@ -1,8 +1,17 @@
-# Nodal · 项目总说明（模块 1–8）
+# Nodal · 项目总说明（模块 1–10）
 
+模块 1：Go 项目骨架、配置、统一响应与错误码。
 模块 2：用户 / 注册登录 / JWT 鉴权（后端 Go + 前端 auth 封装）。
 模块 3：画布核心 CRUD（创建、列表、详情、全量更新、删除、分叉，含分享只读与所有者权限校验）。
 模块 4：Agent 模板、模型适配器与流式推演（多模型路由、自有 API Key 加密存储、SSE 增量出节点/边）。
+模块 5：知识库上传、切片、Embedding 与 pgvector/JSON 双路径 RAG 挂载。
+模块 6：公共广场、发布、点赞评论与 read/fork 分享链接。
+模块 7：REPL 隔离沙箱（用户命名空间 + PTY，前端代码节点可运行）。
+模块 8：前端首页、资源库、广场与登录/主题/卡片组件。
+模块 9：无限画布工作台（ReactFlow、五种节点、四种关系、Monaco/KaTeX/Markdown 编辑器、撤销重做、SSE 增量渲染）。
+模块 10：Demo 画布、全局异常与 toast、接口类型补全、前端/接口/部署文档。
+
+文档入口：[`docs/API.md`](docs/API.md)（接口契约） · [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md)（部署） · [`frontend/README.md`](frontend/README.md)（前端说明）。
 
 后端按 **model / handler / service / middleware** 分层，所有接口共用一套响应体与错误码；
 JWT 鉴权是全局中间件，游客也能拥有自己的临时画布。
@@ -72,7 +81,8 @@ nodal/
 │  │  └─ router/router.go                # 路由分组：公开 / 全局鉴权 / 仅用户
 │  ├─ .env.example
 │  └─ go.mod
-└─ frontend/
+├─ frontend/
+   ├─ README.md
    ├─ src/services/http.ts                    # axios 实例、token 存储、ApiError、拦截器
    ├─ src/services/auth.ts                    # 5 个 auth 接口封装
    ├─ src/services/agent.ts                   # Agent 模板 CRUD
@@ -97,6 +107,12 @@ nodal/
    ├─ src/types/agent.ts                 # Agent / 模型 / 凭证类型
    ├─ src/types/infer.ts                 # 推演请求、SSE 事件、React Flow 结构类型
    └─ .env.example
+├─ docs/
+│  ├─ API.md                             # 模块10：接口契约总表
+│  └─ DEPLOYMENT.md                      # 模块10：部署文档
+├─ deploy/                               # 模块10：Dockerfile 与 Nginx 参考（未真机验证）
+├─ docker-compose.yml                    # 模块10：参考编排（未真机验证）
+└─ README.md
 ```
 
 ## 二、跑起来
@@ -1350,7 +1366,90 @@ GOTOOLCHAIN=local go run ./cmd/server
 - 触控板双指缩放、移动端小屏布局已由 ReactFlow/自适应面板覆盖，但未做真机移动端回归；
 - 知识库挂载是服务端进程内临时关联，服务重启失效，面板中已提示。
 
-## 十六、后续模块怎么接
+## 十七、模块 10：收尾（Demo / 异常 / 类型 / 文档 / 部署）
+
+### 17.1 预置 Demo 画布
+
+新用户注册成功后，服务端自动创建两张可直接编辑的画布：
+
+| Demo | 内容 | 规模 |
+|---|---|---|
+| `Demo｜AI 著作权辩论推演` | 核心命题 → 支持方 / 反例质疑 → 佐证 / 并行假设 → 结论 | 6 节点 6 连线 |
+| `Demo｜缓存穿透方案对比` | 问题 → 布隆过滤器 / 空值缓存两个代码方案 → 佐证 / 反例 → 组合结论 | 6 节点 6 连线 |
+
+实现方式：
+
+- `server/internal/service/demo_service.go` 定义模板，复用 `CanvasService.Create`，Demo 同样经过 `normalizeDocument` 校验；
+- `AuthService.Register` 建用户后 best-effort 种 Demo，失败只记日志，不影响注册；
+- 新增 `POST /api/demo/seed` 幂等接口：该身份已有画布返回 `created=0`，供老账号/游客兜底；
+- 资源库首次加载完成且「0 张画布、无关键词」时，前端调用种子接口并刷新；
+- Demo 是真实画布（可编辑、推演、Fork、分享），不是前端假数据。
+
+### 17.2 全局异常与 toast
+
+- `components/ErrorBoundary.tsx`：捕获 React 渲染异常，展示刷新 / 重试 / 返回资源库；
+- `components/ToastProvider.tsx`：右上角 toast，最多 3 条、2 秒内同文案去重、自动消失；
+- `lib/notify.ts`：组件与 service 共用的通知总线；`notifyApiError` 只把网络错误、HTTP 5xx、后端 `5000` 提升为全局 toast，1001/1002/1003 交给登录弹窗，1000 参数错误留在表单内联；
+- `main.tsx` 顺序：`ThemeProvider → ToastProvider → ErrorBoundary → AuthProvider → Router`；
+- 监听 `unhandledrejection` / `window.error`，未捕获异常不再静默；
+- 已在推演完成/失败、画布创建/删除、分享链接复制、Demo 自动生成处接入 toast。
+
+### 17.3 接口 TS 类型补全
+
+- 新增 `types/api.ts`：`ApiEnvelope<T>`、`API_CODES`、`DeleteResult`、`DemoSeedResult`；
+- `services/http.ts` 改为复用 `ApiEnvelope` 与 `API_CODES`，不再维护第二份错误码表；
+- Agent / 画布 / 知识库 / 评论删除统一返回 `DeleteResult`；
+- 分享链接列表统一 `ShareLinkList`；
+- 新增 `InferErrorEvent`，SSE `error` 事件不再用匿名内联类型；
+- 修正 `types/knowledge.ts` 的 `RetrievePayload` 缩进；
+- 全项目无新增 `any`，`npm run typecheck` 通过。
+
+### 17.4 文档
+
+| 文件 | 内容 |
+|---|---|
+| `frontend/README.md` | 前端架构、脚本、环境变量、画布架构、Monaco 离线、Demo、全局异常、类型约定 |
+| `docs/API.md` | 全部接口、鉴权、游客、SSE/WS 协议、错误码、数据约束 |
+| `docs/DEPLOYMENT.md` | 本地/生产配置、PostgreSQL+pgvector、systemd、Nginx/Caddy、Docker 参考、上线检查、REPL 边界 |
+
+### 17.5 部署参考
+
+新增（**未真机验证，本机无 Docker/PostgreSQL**）：
+
+- `docker-compose.yml`：PostgreSQL 16 + pgvector、backend、frontend 三个服务；
+- `deploy/Dockerfile.backend`：Go 多阶段构建，非 root 运行；
+- `deploy/Dockerfile.frontend`：Node 构建 + Nginx；
+- `deploy/nginx.conf`：静态托管 + `/api` 反代，关闭 SSE 缓冲并转发 WS Upgrade。
+
+生产必须替换 compose 中的 `POSTGRES_PASSWORD`、`NODAL_JWT_SECRET`、`NODAL_ENC_KEY`；
+默认 `NODAL_REPL_ENABLED=false`，容器内 open REPL 需要额外内核/权限配置。
+
+### 17.6 本地自测
+
+```bash
+cd server && GOTOOLCHAIN=local go vet ./... && GOTOOLCHAIN=local go test ./...
+cd ../frontend && npm run typecheck && npm run build
+```
+
+2026-11-07 实测：
+
+- 新注册账号 `m10@test.com` → `/api/canvas/list` 自动出现 2 张 Demo，均 6 节点 6 连线；
+- 资源库截图：两张 Demo 卡片、标签 `示例/辩论/代码/缓存`、节点数正常；
+- 画布截图：辩论 Demo 正反方、佐证/假设、黄色结论框、AI 虚线与关系色正常；代码 Demo 两个 Python 代码节点正常高亮；
+- 删除两张 Demo 后重新打开资源库，`POST /api/demo/seed` 自动补回 2 张，说明空账号兜底生效；
+- 已有画布时再次调用 `POST /api/demo/seed` 返回 `created=0`，幂等性实测通过；
+- `nodal:toast` 事件实测渲染 success/error 两种样式，位置、关闭按钮、去重均正常；
+- 前端 typecheck/build、后端 vet/test 全部通过。
+
+### 17.7 已知边界
+
+- 分享只读页 `/share/:token` 仍是占位，模块 10 未新增独立阅读器；
+- 画布仍分列存储，未切 `content_json`；后端仍是 `server/`，未迁 `backend/`；
+- Docker/PostgreSQL/pgvector 无真机验证；Redis 未接入；
+- `NODAL_EMBED_MODEL=mock/embed` 只用于演示，生产需替换真实 embedding 模型并核对维度；
+- 老账号已有画布时不会强制插入 Demo；清空全部画布后才会兜底补种。
+
+## 十八、后续模块怎么接
 
 ```go
 authed.GET("/canvas/:id/versions", canvasHandler.ListVersions)   // 版本历史

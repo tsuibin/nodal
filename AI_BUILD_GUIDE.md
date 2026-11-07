@@ -9,13 +9,12 @@
 - 模块代码、测试、文档全部在该分支提交，自测通过后合并回 `main`。
 - 合并使用 `git merge --no-ff`，保留模块边界；不使用 `push --force`，不改写已合并历史。
 
-当前状态：
+当前状态（模块 10 开发中，分支 `feature/module-10-wrap-up`）：
 
 ```text
-main
-└── merge: 模块7 REPL 隔离沙箱
-    └── feature/module-7-repl
-        └── feat: 完成模块7 REPL 隔离沙箱（含既有模块基线导入）
+main（模块 9 已合并，HEAD 7a771da）
+└── feature/module-10-wrap-up
+    └── feat: 完成模块10 收尾
 ```
 
 仓库在模块 7 阶段初始化，因此首个功能提交同时导入了模块 1–6 的既有代码；之后每个模块严格按上述流程执行。
@@ -36,7 +35,7 @@ chore: 更新依赖与构建脚本
 
 ## 3. 目录约定
 
-当前可运行结构（模块 1–9 已落盘）：
+当前可运行结构（模块 1–10 已落盘）：
 
 ```text
 nodal/
@@ -58,10 +57,16 @@ nodal/
 │       ├── components/canvas/  # 模块9 节点/边/编辑器/面板
 │       ├── pages/       # 首页/资源库/广场/画布
 │       └── types/       # 接口 TS 类型
-└── README.md
+├── docs/
+│   ├── API.md           # 模块10 接口契约
+│   └── DEPLOYMENT.md    # 模块10 部署文档
+├── deploy/              # 模块10 Dockerfile / Nginx 参考
+├── docker-compose.yml   # 模块10 参考编排（未真机验证）
+├── README.md
+└── frontend/README.md   # 模块10 前端说明
 ```
 
-目标产品树（`backend/`、`docs/`、`scripts/`、`docker-compose.yml`）会在模块 10/结构重构分支补齐；`frontend/` 已在模块 8 落位。
+目标产品树（`backend/`、`scripts/.github/workflows`）仍待结构重构分支补齐；`frontend/` 已在模块 8 落位，`docs/` 与部署文件已在模块 10 落位。
 **不建议在模块开发中途整体改目录**：Go import 路径、前端相对路径、README 与部署命令都会同时变化。
 如确需严格迁移，单独开 `refactor/migrate-layout` 分支，先完成构建/测试再合并。
 
@@ -93,8 +98,8 @@ nodal/
 | 6 | 广场 / 点赞评论 / 分享链接 | 已完成 | 基线 |
 | 7 | REPL 隔离沙箱 / WS 终端 / 前端运行面板 | 已完成 | `feature/module-7-repl` |
 | 8 | 前端首页 / 资源库 / 广场 | 已完成 | `feature/module-8-frontend` |
-| 9 | 画布页 / React Flow / 推演交互 | 待开始 | - |
-| 10 | Demo 画布 / 联调 / 部署文档 | 待开始 | - |
+| 9 | 画布页 / React Flow / 推演交互 | 已完成 | `feature/module-9-canvas` |
+| 10 | Demo 画布 / Toast / 类型 / 文档 / 部署 | 已完成 | `feature/module-10-wrap-up` |
 
 ## 5. 本地校验
 
@@ -106,7 +111,7 @@ go vet ./...
 go test ./...
 
 # 前端
-cd ../web
+cd ../frontend
 npm install
 npm run typecheck
 ```

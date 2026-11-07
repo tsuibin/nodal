@@ -9,6 +9,7 @@
  * DELETE /api/canvas/:id/mount-knowledge       解除挂载
  */
 import { request } from './http'
+import type { DeleteResult } from '../types/api'
 import type { KnowledgeFile, KnowledgeListPayload, MountView } from '../types/knowledge'
 
 export const knowledgeApi = {
@@ -28,8 +29,8 @@ export const knowledgeApi = {
     return request<KnowledgeListPayload>({ url: '/knowledge/list', method: 'GET' })
   },
 
-  remove(id: number): Promise<{ id: number; deleted: boolean }> {
-    return request<{ id: number; deleted: boolean }>({ url: `/knowledge/${id}`, method: 'DELETE' })
+  remove(id: number): Promise<DeleteResult> {
+    return request<DeleteResult>({ url: `/knowledge/${id}`, method: 'DELETE' })
   },
 
   mount(canvasId: number, fileIds: number[]): Promise<MountView> {

@@ -79,6 +79,11 @@ export interface ShareLink {
   share_path: string
 }
 
+export interface ShareLinkList {
+  items: ShareLink[]
+  total: number
+}
+
 export interface ShareResolveResult {
   token: string
   permission: SharePermission
@@ -86,4 +91,10 @@ export interface ShareResolveResult {
   can_fork: boolean
   expires_at?: string
   canvas: CanvasView
+}
+
+/** 停用分享链接 */
+export interface ShareLinkRevokeResult {
+  id: number
+  enabled: boolean
 }

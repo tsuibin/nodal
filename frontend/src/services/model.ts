@@ -10,6 +10,7 @@
  */
 import { request } from './http'
 import type {
+  CredentialDeleteResult,
   ModelCatalogItem,
   ModelCredentialListPayload,
   ModelCredentialView,
@@ -37,8 +38,8 @@ export const modelApi = {
     })
   },
 
-  removeCredential(provider: string): Promise<{ provider: string; deleted: boolean }> {
-    return request<{ provider: string; deleted: boolean }>({
+  removeCredential(provider: string): Promise<CredentialDeleteResult> {
+    return request<CredentialDeleteResult>({
       url: `/model/credentials/${provider}`,
       method: 'DELETE',
     })

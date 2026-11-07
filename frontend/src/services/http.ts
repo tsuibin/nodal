@@ -11,15 +11,9 @@
  * 游客：后端在 X-Guest-Token 响应头下发临时身份，这里自动落库并在后续请求中带上，
  * 保证刷新页面后仍是同一个临时画布。
  */
+import { notifyApiError } from '../lib/notify'
+import { API_CODES, type ApiEnvelope } from '../types/api'
 import axios, { type AxiosError, type AxiosRequestConfig } from 'axios'
-
-export interface ApiEnvelope<T> {
-  code: number
-  message: string
-  data?: T
-  details?: unknown
-  request_id?: string
-}
 
 export interface FieldErrors {
   [field: string]: string
@@ -66,49 +60,7 @@ export class ApiError extends Error {
   }
 }
 
-export const AUTH_CODES = {
-  ok: 0,
-  invalidParam: 1000,
-  unauthorized: 1001,
-  tokenExpired: 1002,
-  forbidden: 1003,
-  notFound: 1004,
-  emailTaken: 2001,
-  userNotFound: 2002,
-  badCredentials: 2003,
-  accountDisabled: 2004,
-  guestDisabled: 2005,
-  guestExpired: 2006,
-  // 模块 4：Agent / 模型
-  agentNotFound: 3001,
-  agentNameTaken: 3002,
-  modelNotSupported: 3003,
-  modelKeyMissing: 3004,
-  modelCallFailed: 3005,
-  emptyCompletion: 3006,
-  inferRunning: 3007,
-  // 模块 5：知识库 / RAG
-  knowledgeNotFound: 4001,
-  unsupportedFile: 4002,
-  fileParseFailed: 4003,
-  knowledgeNotMounted: 4004,
-  embeddingFailed: 4005,
-  // 模块 6：广场 / 分享 / 互动
-  shareInvalid: 6001,
-  shareExpired: 6002,
-  shareForbidden: 6003,
-  canvasNotPublished: 6004,
-  commentNotFound: 6005,
-  // 模块 7：REPL 沙箱
-  replUnavailable: 7001,
-  replNotFound: 7002,
-  replTooMany: 7003,
-  replAttached: 7004,
-  replLanguage: 7005,
-  replCodeTooLarge: 7006,
-  internal: 5000,
-  network: -1,
-} as const
+export const AUTH_CODES = API_CODES
 
 // ---------- token 存储 ----------
 
@@ -243,6 +195,7 @@ http.interceptors.response.use(
         requestId: body.request_id,
       })
       if (error.isUnauthorized) broadcastUnauthorized()
+      notifyApiError(error)
       throw error
     }
     return res
@@ -267,6 +220,7 @@ http.interceptors.response.use(
         cause: error,
       })
       if (apiError.isUnauthorized) broadcastUnauthorized()
+      notifyApiError(apiError)
       return Promise.reject(apiError)
     }
 
@@ -277,14 +231,14 @@ http.interceptors.response.use(
           ? `服务异常（HTTP ${response.status}）`
           : '网络异常，请检查网络连接'
 
-    return Promise.reject(
-      new ApiError({
-        code: AUTH_CODES.network,
-        message,
-        status: response?.status,
-        cause: error,
-      }),
-    )
+    const networkError = new ApiError({
+      code: AUTH_CODES.network,
+      message,
+      status: response?.status,
+      cause: error,
+    })
+    notifyApiError(networkError)
+    return Promise.reject(networkError)
   },
 )
 

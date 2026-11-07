@@ -33,6 +33,7 @@ import { useAgentList } from '../hooks/useAgentList'
 import { useCanvasGraph } from '../hooks/useCanvasGraph'
 import { useInferStream } from '../hooks/useInferStream'
 import { useLoginModal } from '../components/LoginModalProvider'
+import { useToast } from '../components/ToastProvider'
 import { ApiError, tokenStore } from '../services/http'
 import { canvasApi } from '../services/canvas'
 import type { CanvasView } from '../types/canvas'
@@ -184,6 +185,7 @@ function CanvasWorkspace({ initialCanvas, onBack, onNeedLibrary }: CanvasWorkspa
   const auth = useAuth()
   const navigate = useNavigate()
   const { openLogin } = useLoginModal()
+  const toast = useToast()
   const flow = useReactFlow()
   const authenticated = auth.status === 'authenticated'
   const canEdit = initialCanvas.permissions.can_edit
@@ -335,15 +337,18 @@ function CanvasWorkspace({ initialCanvas, onBack, onNeedLibrary }: CanvasWorkspa
       graph.appendGeneratedEdge(aiEdge)
     },
     onDone: (done) => {
-      setNotice(
-        `推演完成：新增 ${done.node_count} 个节点、${done.edge_count} 条连线${
-          done.skipped ? `，忽略 ${done.skipped} 条非法输出` : ''
-        }。`,
-      )
+      const message = `推演完成：新增 ${done.node_count} 个节点、${done.edge_count} 条连线${
+        done.skipped ? `，忽略 ${done.skipped} 条非法输出` : ''
+      }。`
+      setNotice(message)
+      toast.success(message)
       // 让新增节点进入视野，但不打断用户当前手动缩放太多
       window.setTimeout(() => flow.fitView({ padding: 0.22, duration: 500 }), 80)
     },
-    onError: (err) => setNotice(err.message),
+    onError: (err) => {
+      setNotice(err.message)
+      toast.error(err.message)
+    },
   })
 
   const startInfer = (agentID: number) => {

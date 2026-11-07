@@ -14,6 +14,8 @@ export interface UseCanvasListResult {
   page: number
   hasMore: boolean
   loading: boolean
+  /** 首次列表请求是否已结束（无论成功/失败） */
+  loaded: boolean
   error: ApiError | Error | null
   refresh: () => Promise<void>
   loadMore: () => Promise<void>
@@ -29,6 +31,7 @@ export function useCanvasList(options: { immediate?: boolean } = {}): UseCanvasL
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [loading, setLoading] = useState(false)
+  const [loaded, setLoaded] = useState(false)
   const [error, setError] = useState<ApiError | Error | null>(null)
 
   const mountedRef = useRef(true)
@@ -57,7 +60,10 @@ export function useCanvasList(options: { immediate?: boolean } = {}): UseCanvasL
           setError(err instanceof Error ? err : new Error(String(err)))
         }
       } finally {
-        if (mountedRef.current && seq === seqRef.current) setLoading(false)
+        if (mountedRef.current && seq === seqRef.current) {
+          setLoading(false)
+          setLoaded(true)
+        }
       }
     },
     [filters],
@@ -109,5 +115,5 @@ export function useCanvasList(options: { immediate?: boolean } = {}): UseCanvasL
     if (immediate) void load(1, false)
   }, [immediate, load])
 
-  return { items, total, page, hasMore: items.length < total, loading, error, refresh, loadMore, setFilters, create, remove }
+  return { items, total, page, hasMore: items.length < total, loading, loaded, error, refresh, loadMore, setFilters, create, remove }
 }

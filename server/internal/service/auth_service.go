@@ -130,6 +130,13 @@ func (s *AuthService) Register(ctx context.Context, in RegisterInput) (*Session,
 	}
 
 	slog.Info("user registered", "user_id", user.ID, "email", user.Email)
+
+	// 模块 10：新用户注册即预置两张 Demo 画布。
+	// 种子失败不回滚注册：用户已经创建成功，Demo 可以在资源库空列表时再兜底。
+	if _, seedErr := NewDemoService(s.db).Seed(ctx, &token.Identity{Role: token.RoleUser, UserID: user.ID}); seedErr != nil {
+		slog.Warn("seed demo canvases after register failed", "user_id", user.ID, "error", seedErr)
+	}
+
 	return s.issueUserSession(user)
 }
 

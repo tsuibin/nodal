@@ -12,6 +12,7 @@
  * 但知识库、Agent 模板等能力游客调用会返回 1003。
  */
 import { request } from './http'
+import type { DeleteResult } from '../types/api'
 import type {
   CanvasList,
   CanvasListQuery,
@@ -41,8 +42,8 @@ export const canvasApi = {
     return request<CanvasView>({ url: `/canvas/${id}`, method: 'PUT', data: payload })
   },
 
-  remove(id: number): Promise<{ id: number; deleted: boolean }> {
-    return request<{ id: number; deleted: boolean }>({ url: `/canvas/${id}`, method: 'DELETE' })
+  remove(id: number): Promise<DeleteResult> {
+    return request<DeleteResult>({ url: `/canvas/${id}`, method: 'DELETE' })
   },
 
   fork(id: number, title?: string): Promise<CanvasView> {

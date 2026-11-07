@@ -18,7 +18,9 @@ import { useAuth } from '../hooks/useAuth'
 import { useCanvasList } from '../hooks/useCanvasList'
 import { useKnowledgeFiles } from '../hooks/useKnowledge'
 import { formatRelativeTime } from '../lib/format'
+import { demoApi } from '../services/demo'
 import { ApiError } from '../services/http'
+import { useToast } from '../components/ToastProvider'
 
 type TabKey = 'canvas' | 'knowledge' | 'agent'
 
@@ -49,10 +51,12 @@ export function LibraryPage() {
   const [notice, setNotice] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const autoCreateRef = useRef(false)
+  const demoSeedRef = useRef(false)
 
   const canvases = useCanvasList()
   const knowledge = useKnowledgeFiles({ immediate: false })
   const agents = useAgentList(false)
+  const toast = useToast()
 
   // 顶部「新建画布」通过 ?new=1 进来，只自动创建一次
   useEffect(() => {
@@ -64,6 +68,26 @@ export function LibraryPage() {
       if (created) navigate(`/canvas/${created.id}`)
     })()
   }, [params, setParams, status, canvases, navigate])
+
+  // 新用户兜底：注册时后端已经种了 Demo；老账号/游客第一次打开资源库且 0 张画布时补种。
+  // 只在无关键词、首屏加载完成后触发，避免把「搜索无结果」误判为空账号。
+  useEffect(() => {
+    if (status === 'loading' || status === 'anonymous') return
+    if (!canvases.loaded || canvases.loading || demoSeedRef.current) return
+    if (keyword.trim() || canvases.total !== 0) return
+    demoSeedRef.current = true
+    void demoApi
+      .seed()
+      .then((result) => {
+        if (result.created > 0) {
+          toast.success(`已为你生成 ${result.created} 张 Demo 画布`)
+          void canvases.refresh()
+        }
+      })
+      .catch(() => {
+        // 失败由全局接口错误 toast 兜底，这里不重复提示
+      })
+  }, [canvases.loaded, canvases.loading, canvases.total, canvases.refresh, keyword, status, toast])
 
   // 画布列表：关键词防抖后重新拉取
   useEffect(() => {
@@ -89,8 +113,10 @@ export function LibraryPage() {
     setNotice(null)
     try {
       const created = await canvases.create('未命名画布')
-      if (created) navigate(`/canvas/${created.id}`)
-      else setNotice(readableError(canvases.error))
+      if (created) {
+        toast.success('画布已创建')
+        navigate(`/canvas/${created.id}`)
+      } else setNotice(readableError(canvases.error))
     } finally {
       setCreating(false)
     }
@@ -102,7 +128,15 @@ export function LibraryPage() {
     if (next !== 'canvas' && !isAuthenticated) openLogin()
   }
 
+  const removeCanvas = async (id: number) => {
+    if (!window.confirm('删除后不可恢复，确认删除这张画布？')) return
+    const removed = await canvases.remove(id)
+    if (removed) toast.success('画布已删除')
+    else setNotice(readableError(canvases.error))
+  }
+
   const uploadFile = async (event: ChangeEvent<HTMLInputElement>) => {
+
     const file = event.target.files?.[0]
     event.target.value = ''
     if (!file) return
@@ -180,9 +214,7 @@ export function LibraryPage() {
           onRetry={() => void canvases.refresh()}
           onOpen={(id) => navigate(`/canvas/${id}`)}
           onCreate={() => void createCanvas()}
-          onDelete={(id) => {
-            if (window.confirm('删除后不可恢复，确认删除这张画布？')) void canvases.remove(id)
-          }}
+          onDelete={(id) => void removeCanvas(id)}
         />
       )}
 

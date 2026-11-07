@@ -28,6 +28,7 @@ type Deps struct {
 	Square        *handler.SquareHandler
 	Share         *handler.ShareHandler
 	Repl          *handler.ReplHandler
+	Demo          *handler.DemoHandler
 	Authenticator *middleware.Authenticator
 }
 
@@ -79,6 +80,7 @@ func New(d Deps) *gin.Engine {
 	squareHandler := d.Square
 	shareHandler := d.Share
 	replHandler := d.Repl
+	demoHandler := d.Demo
 
 	api := r.Group("/api")
 
@@ -100,6 +102,8 @@ func New(d Deps) *gin.Engine {
 	authed.Use(d.Authenticator.Global())
 	{
 		authed.GET("/auth/me", authHandler.Me)
+		// 模块 10：Demo 画布种子（用户/游客都可；已有画布时幂等返回 0）
+		authed.POST("/demo/seed", demoHandler.Seed)
 
 		// 仅注册用户
 		userOnly := authed.Group("")

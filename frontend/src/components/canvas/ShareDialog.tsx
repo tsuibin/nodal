@@ -5,6 +5,7 @@
  */
 import { useState, type ReactNode } from 'react'
 import { useShareLinks } from '../../hooks/useShareLinks'
+import { useToast } from '../ToastProvider'
 import type { SharePermission } from '../../types/square'
 import { CheckIcon, CloseIcon, ForkIcon, ShareIcon } from '../icons'
 
@@ -15,10 +16,16 @@ export interface ShareDialogProps {
 
 export function ShareDialog({ canvasId, onClose }: ShareDialogProps) {
   const share = useShareLinks(canvasId)
+  const toast = useToast()
   const [permission, setPermission] = useState<SharePermission>('read')
   const [expires, setExpires] = useState<number>(0)
   const [copied, setCopied] = useState<string>('')
   const [busy, setBusy] = useState(false)
+
+  const copy = async (url: string) => {
+    await copyText(url)
+    toast.success('分享链接已复制')
+  }
 
   const create = async () => {
     setBusy(true)
@@ -27,7 +34,7 @@ export function ShareDialog({ canvasId, onClose }: ShareDialogProps) {
       if (link) {
         const url = shareURL(link.share_path, link.token)
         setCopied(url)
-        await copyText(url)
+        await copy(url)
       }
     } finally {
       setBusy(false)
@@ -104,7 +111,7 @@ export function ShareDialog({ canvasId, onClose }: ShareDialogProps) {
               <button
                 type="button"
                 className="nodal-btn nodal-btn-ghost shrink-0"
-                onClick={() => void copyText(copied)}
+                onClick={() => void copy(copied)}
               >
                 <CheckIcon width={14} height={14} />
                 复制
@@ -140,7 +147,7 @@ export function ShareDialog({ canvasId, onClose }: ShareDialogProps) {
                       type="button"
                       className="nodal-btn nodal-btn-ghost"
                       disabled={!link.enabled || link.expired}
-                      onClick={() => void copyText(url)}
+                      onClick={() => void copy(url)}
                     >
                       复制
                     </button>
