@@ -1148,7 +1148,7 @@ await repl.run(code, 'python')
 | `/library` | 资源库 | 我的画布 / 知识库 / Agent 模板三个 Tab |
 | `/square` | 公共广场 | 搜索、标签筛选、最新/最热、点赞、加载更多 |
 
-`/canvas/:id` 与 `/share/:token` 在模块 8 只放占位页，模块 9/10 接入 ReactFlow 与分享阅读。
+`/share/:token` 在模块 8 只放占位页；`/canvas/:id` 已在模块 9 接入完整 ReactFlow 工作台，分享只读页留给模块 10。
 
 ### 14.2 技术落地
 
@@ -1225,11 +1225,132 @@ npm run dev      # 默认 http://127.0.0.1:5173，/api 代理到 :8080
 
 - 当前仓库仍保留 `server/`、`frontend/` 两段；后端目录迁移到 `backend/` 留待结构重构分支，避免模块 8 同时改 Go import 路径；
 - `docs/PRD.md`、`docs/visual-spec.md` 当前不在仓库，页面视觉按本轮 brief 的品牌色/字体实现，docs 补齐后需做一次规范核对；
-- 广场卡片点击进入模块 9 画布页占位，暂不能阅读画布内容；
+- 广场卡片已可进入模块 9 画布页；分享链接的只读阅读页仍是占位，模块 10 接入；
 - 登录弹窗未做找回密码/邮箱验证，后端当前也未提供；
 - 图片头像使用首字母占位，头像上传在后续模块补。
 
-## 十五、后续模块怎么接
+## 十五、模块 9：前端画布页 /canvas/:id
+
+### 15.1 范围
+
+这是产品核心工作台：沉浸式全屏，不套首页导航/页脚。对应 prompt 的九项功能：
+
+| 能力 | 落地 |
+|---|---|
+| 平移 / 缩放 / 框选 / 多选 | 左键框选、中键或右键平移、滚轮缩放；`selectionOnDrag`、`multiSelectionKeyCode=['Shift','Meta','Control']`、`minZoom 0.2 / maxZoom 2.2` |
+| 五种节点 | 统一 ReactFlow type `nodal`，用 `data.kind ∈ text/code/formula/image/file` 区分 |
+| 拖拽连线 + 四种关系 | 右侧 Handle 连到目标节点后弹出关系选择：推导自 / 反例质疑 / 补充佐证 / 并行假设 |
+| 节点编辑器 | 文本 Markdown 编辑/预览；代码 Monaco + 语言切换 + REPL 运行；公式 KaTeX 实时预览；图片 URL 或本地文件；文件只记录元信息 |
+| 选中节点推演 | 底部浮条「推演」→ 选 Agent → SSE 增量节点/边，落地前用 `findFreePosition` 避让已有节点 |
+| 右侧面板 | 画布信息（节点/连线/AI 节点数、标题/描述/标签、权限与更新时间）、Agent 列表、知识库挂载三 Tab |
+| 节点视觉分层 | 用户中性卡片；AI 节点品牌色虚线 + AI 徽标 + Agent 页脚；结论节点黄色加粗边框 + 「结论」徽标 |
+| 连线颜色 | 颜色只跟随 `data.relation`：`#4060FF` / `#ff6b6b` / `#36c9a5` / `#ffc857`；AI 边为虚线 |
+| 撤销 / 重做 | 自写 `CanvasHistory`，栈上限 60；拖拽只在 `dragStart` 记快照、`dragStop` 确认真变化才入栈 |
+| 分享 / Fork | 分享弹窗创建 read/fork 链接、复制、列出、停用；Fork 调 `POST /api/canvas/:id/fork` 后跳转新画布 |
+
+### 15.2 技术落地
+
+新增依赖（`frontend/package.json`）：
+
+```text
+@xyflow/react ^12.12.1
+monaco-editor ^0.57.0
+@monaco-editor/react ^4.7.0
+katex ^0.19.1
+shiki ^4.6.0
+react-markdown ^10.1.0
+remark-gfm ^4.0.1
+```
+
+关键决策：
+
+- **Monaco 离线**：`src/lib/monaco.ts` 按需 import `editor.api` + python/shell/js/ts/go/markdown 语言 register，`?worker` 注入 `MonacoEnvironment.getWorker`，`loader.config({ monaco })`，不依赖 jsDelivr；生产构建因此把画布页单独切成懒加载 chunk。
+- **Shiki**：只注册 `python/bash/javascript/typescript/json/go/shellscript` 与 `github-light/github-dark` 双主题，结果按 `theme:lang:code` 缓存，超过 30 条清空。
+- **KaTeX**：`throwOnError:false, strict:false, trust:false`，非法公式显示红色原文，不炸页面。
+- **历史栈**：`structuredClone` 优先、JSON 兜底；拖拽高频 changes 不入栈，避免 Ctrl+Z 退一像素。
+- **保存**：编辑后 1.4s debounce 自动保存；`Ctrl+S` 立即保存；`saveLockRef` 防并发；保存前后比对 `graphSignature`，一致才 `markSaved()`，推演流仍在追加时不会误清 dirty；`beforeunload` 有未保存提示。
+- **键盘**：Input/Textarea/Select/`.monaco-editor` 内不劫持；`Ctrl+Z` / `Ctrl+Shift+Z` / `Delete|Backspace` / `Esc`；ReactFlow 自带 `deleteKeyCode={null}` 关闭。
+- **视口**：初次 `applyViewport` 不标 dirty；只有用户真正平移/缩放改变视口才触发保存。
+- **游客**：无 token 先 `auth.ensureGuest()` 再读画布，游客可打开自己的临时画布；推演、Agent、知识库等仍按 `userOnly` 规则要求登录。
+- **路由**：`canvas/:id` 提到 `AppShell` 外层，并在 `App.tsx` 用 `React.lazy` 按需加载；首页首屏 JS 保持 284KB，画布 chunk 才带 ReactFlow/Monaco/Shiki。
+
+### 15.3 目录（模块 9 新增）
+
+```text
+frontend/src/
+├─ pages/
+│  └─ CanvasPage.tsx              # 加载 / 错误页 / Provider + 工作台状态机
+├─ components/canvas/
+│  ├─ NodalNode.tsx               # 统一节点卡片 + 五种 body + CodePreview
+│  ├─ RelationEdge.tsx            # 贝塞尔关系边 + 胶囊标签
+│  ├─ ShikiCode.tsx               # 只读代码高亮
+│  ├─ NodeEditorDialog.tsx        # Markdown / Monaco / KaTeX / 图片 / 文件编辑器
+│  ├─ RelationPicker.tsx          # 连线后选四种关系
+│  ├─ InferDialog.tsx             # 选 Agent、运行状态、完成/错误
+│  ├─ ShareDialog.tsx             # read/fork、有效期、复制、停用
+│  ├─ CanvasSidePanel.tsx         # 画布 / Agent / 知识库三 Tab
+│  ├─ CanvasToolbar.tsx
+│  ├─ SelectionBar.tsx
+│  ├─ CanvasStatusBar.tsx
+│  └─ CanvasEmptyState.tsx
+├─ hooks/useCanvasGraph.ts        # 受控图 + 历史栈 + dirty
+├─ lib/
+│  ├─ graph.ts                    # 序列化、归一化、建节点/边、空闲位置
+│  ├─ monaco.ts / shiki.ts / katex.ts
+├─ store/canvasHistory.ts
+└─ types/canvas-node.ts
+```
+
+### 15.4 与后端的字段约定
+
+- 画布文档：`{nodes:[], edges:[], viewport:{x,y,zoom}}`，服务端 `normalizeDocument` 校验 id 唯一、边端点存在、5MB/2000 节点/5000 边上限；
+- AI 节点：服务端注入 `data.ai_generated=true`、`data.ai_agent_id=<agent id>`；前端归一化时兼容读取 `ai_agent_id` 与 `agent_id`，展示为 `source='agent'`；
+- 关系：`data.relation ∈ derive|counter|evidence|hypothesis`，缺失的历史数据按 `derive` 处理；
+- 保存前剔除 `selected / dragging / measured` 等 Render-only 字段，避免 JSON 膨胀；
+- AI 只能新增：前端只消费 SSE 的 `node` / `edge`，不发送修改/删除指令；服务端对 delete/update 一律 skip。
+
+### 15.5 本地自测
+
+```bash
+cd frontend
+npm run typecheck
+npm run build
+VITE_DEV_API_TARGET=http://127.0.0.1:18087 npm run dev -- --port 5173
+```
+
+联调后端（SQLite 演示配置）：
+
+```bash
+cd server
+NODAL_HTTP_ADDR=:18087 \
+NODAL_DB_DRIVER=sqlite \
+NODAL_DB_DSN=/tmp/nodal-m9/nodal.db \
+NODAL_JWT_SECRET=test-secret-at-least-32-characters-long \
+NODAL_STORAGE_DIR=/tmp/nodal-m9/uploads \
+NODAL_EMBED_MODEL=mock/embed \
+GOTOOLCHAIN=local go run ./cmd/server
+```
+
+2026-11-07 实机回归结果：
+
+- `npm run typecheck` 通过；
+- `npm run build` 通过；首页主 JS 284KB（gzip 93KB），画布懒加载 chunk 3.59MB（gzip 980KB），Canvas CSS 115KB；
+- Chromium headless 1440×1000 实拍浅色/深色画布：4 节点 3 连线、关系颜色、侧面板、MiniMap、状态条正常；
+- 双击节点打开编辑器：Markdown textarea、Monaco 代码编辑器（Python 语法高亮离线可用）、公式 KaTeX 预览均正常；
+- 添加代码节点 → 选中 → 「推演」→ 选择 Agent → SSE 返回 3 个节点、2 条连线，增量渲染为 AI 虚线节点/边，自动保存成功；
+- 分享弹窗读取既有 read/fork 链接、复制、停用路径正常；空画布 `EMPTY CANVAS` 五种节点引导正常；
+- 工具栏撤销把 9 节点退到 8，重做回到 9；真实 `Ctrl+Z/Shift+Z` 键盘事件通过，标签页内输入框不会劫持。
+
+### 15.6 已知边界
+
+- 画布页一次性引入 ReactFlow/Monaco/Shiki/KaTeX，chunk 约 3.6MB；已用路由懒加载隔离，后续可再把 Monaco 做成“打开编辑器时动态 import”；
+- 服务端 mock 模型生成的是固定演示链（`mock-n1 → mock-n2 → mock-n3`），不保证从选中节点发散；这是模块 4 的 mock 行为，接真实模型后由模型决定；
+- 分享链接只能创建/停用，`/share/:token` 的只读画布阅读页仍是占位，模块 10 接；
+- 图片节点以 data URL 入库，限制 1.5MB；文件节点只记录元信息，不上传文件内容；
+- 触控板双指缩放、移动端小屏布局已由 ReactFlow/自适应面板覆盖，但未做真机移动端回归；
+- 知识库挂载是服务端进程内临时关联，服务重启失效，面板中已提示。
+
+## 十六、后续模块怎么接
 
 ```go
 authed.GET("/canvas/:id/versions", canvasHandler.ListVersions)   // 版本历史

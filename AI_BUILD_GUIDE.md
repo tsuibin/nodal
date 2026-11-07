@@ -36,7 +36,7 @@ chore: 更新依赖与构建脚本
 
 ## 3. 目录约定
 
-当前可运行结构（模块 1–7 已落盘）：
+当前可运行结构（模块 1–9 已落盘）：
 
 ```text
 nodal/
@@ -52,14 +52,16 @@ nodal/
 │       └── ...
 ├── frontend/                 # React + TS 前端
 │   └── src/
-│       ├── api/         # 请求封装（目标树中的 services）
+│       ├── services/    # 请求封装（模块 8 由 api/ 迁入）
 │       ├── hooks/       # 数据/流式 hook
 │       ├── types/       # 接口 TS 类型
-│       └── components/  # UI 组件
+│       ├── components/canvas/  # 模块9 节点/边/编辑器/面板
+│       ├── pages/       # 首页/资源库/广场/画布
+│       └── types/       # 接口 TS 类型
 └── README.md
 ```
 
-目标产品树（`backend/`、`frontend/`、`docs/`、`scripts/`、`docker-compose.yml`）会在模块 8–10 逐步补齐。
+目标产品树（`backend/`、`docs/`、`scripts/`、`docker-compose.yml`）会在模块 10/结构重构分支补齐；`frontend/` 已在模块 8 落位。
 **不建议在模块开发中途整体改目录**：Go import 路径、前端相对路径、README 与部署命令都会同时变化。
 如确需严格迁移，单独开 `refactor/migrate-layout` 分支，先完成构建/测试再合并。
 

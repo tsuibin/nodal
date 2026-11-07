@@ -6,6 +6,7 @@ import App from './App'
 import { AuthProvider } from './hooks/useAuth'
 import { ThemeProvider } from './hooks/useTheme'
 import './index.css'
+import 'katex/dist/katex.min.css'
 
 /**
  * 应用入口：
