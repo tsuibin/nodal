@@ -1,8 +1,8 @@
 -- Nodal PostgreSQL 16 + pgvector 初始化脚本（参考）
 -- 运行期仍会执行 GORM AutoMigrate；本脚本用于空库首次部署、审阅表结构或在托管环境预建表。
+-- 前置：由超级用户先执行 0000_extensions.sql（CREATE EXTENSION vector）。
+-- 本脚本应以应用数据库账号执行，保证表/序列归应用账号所有。
 -- 注意：embedding 维度与 NODAL_EMBED_DIM 保持一致，默认 1536。
-
-CREATE EXTENSION IF NOT EXISTS vector;
 
 CREATE TABLE IF NOT EXISTS users (
     id            bigserial PRIMARY KEY,

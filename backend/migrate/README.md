@@ -5,7 +5,10 @@
 ## 使用方式
 
 ```bash
-createdb nodal
+# 1) 超级用户安装扩展（只做一次）
+psql "postgres://postgres@127.0.0.1:5432/nodal" -f backend/migrate/0000_extensions.sql
+
+# 2) 应用账号建表，保证表 owner 与后端 DSN 用户一致
 psql "postgres://nodal@127.0.0.1:5432/nodal" -f backend/migrate/0001_init.sql
 ```
 
@@ -15,6 +18,7 @@ psql "postgres://nodal@127.0.0.1:5432/nodal" -f backend/migrate/0001_init.sql
 ## 边界
 
 - 脚本按默认 `NODAL_EMBED_DIM=1536` 建 `vector(1536)`；改维度时必须同步修改本文件并重建索引；
+- `0001_init.sql` 不包含 `CREATE EXTENSION`，必须先用超级用户执行 `0000_extensions.sql`，否则向量列会失败；
 - 这是首次初始化脚本，不是增量迁移框架；后续字段变更请新增 `0002_xxx.sql`，不要改动已上线的 `0001`；
 - SQLite/MySQL 不使用本脚本，继续依赖 AutoMigrate；
 - 本机没有 PostgreSQL，脚本未在真库执行验证，上线前请在一个空库跑一次并核对索引。

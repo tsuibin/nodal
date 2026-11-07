@@ -31,7 +31,7 @@ services:
       NODAL_DB_DSN: "host=db user=nodal password=change-me-in-prod dbname=nodal port=5432 sslmode=disable"
       # 生产必须替换：>=32 位随机串 + 32 字节 base64/hex 密钥
       NODAL_JWT_SECRET: "replace-with-at-least-32-characters-secret"
-      NODAL_ENC_KEY: "replace-with-32-byte-base64-or-64-hex"
+      NODAL_ENC_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
       NODAL_CORS_ORIGINS: "http://localhost:8080"
       NODAL_STORAGE_DIR: /app/data/uploads
       NODAL_EMBED_MODEL: mock/embed

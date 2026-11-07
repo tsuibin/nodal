@@ -101,10 +101,13 @@ CREATE EXTENSION IF NOT EXISTS vector;
 可以直接执行仓库内的初始化脚本（推荐空库）：
 
 ```bash
+# 超级用户仅执行一次扩展安装，应用账号执行表结构
+psql 'postgres://postgres@127.0.0.1:5432/nodal' -f backend/migrate/0000_extensions.sql
 NODAL_DB_DSN='postgres://nodal:pass@127.0.0.1:5432/nodal' ./scripts/db-init.sh
 ```
 
-等价 SQL：`psql "$NODAL_DB_DSN" -f backend/migrate/0001_init.sql`。
+`db-init.sh` 可用 `NODAL_PG_SUPER_DSN` 自动执行扩展；表结构必须由应用账号执行，
+否则表归超级用户所有，GORM 的表检测会因权限不足把已有表当成不存在。
 
 后端启动时仍会 `AutoMigrate`，并在 `vector.EnsurePGVectorSchema` 中补齐 `vector(N)` 列与 HNSW 索引。
 `NODAL_EMBED_DIM` 必须与模型输出维度一致；默认脚本按 1536 建列，改维度时要同步改 SQL 并重建索引。
