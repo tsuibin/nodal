@@ -4,12 +4,8 @@ package db
 import (
 	"fmt"
 	"log/slog"
-	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
-	"github.com/glebarez/sqlite"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -85,18 +81,7 @@ func Migrate(gdb *gorm.DB, cfg *config.Config) error {
 func dialectorOf(cfg *config.Config) (gorm.Dialector, error) {
 	switch cfg.DBDriver {
 	case "sqlite":
-		dsn := cfg.DBDSN
-		// "file:" 形式由 sqlite 驱动自己解析路径，这里不替它建目录；
-		// :memory: 也不需要落盘。
-		if !strings.HasPrefix(dsn, "file:") && dsn != ":memory:" {
-			dir := filepath.Dir(dsn)
-			if dir != "" && dir != "." {
-				if err := os.MkdirAll(dir, 0o755); err != nil {
-					return nil, fmt.Errorf("创建 sqlite 目录失败: %w", err)
-				}
-			}
-		}
-		return sqlite.Open(dsn), nil
+		return sqliteDialector(cfg.DBDSN)
 	case "mysql":
 		return mysql.Open(cfg.DBDSN), nil
 	case "postgres":
