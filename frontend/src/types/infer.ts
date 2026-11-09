@@ -25,6 +25,8 @@ export interface RunInferPayload {
   /** 画布上被选中的节点 id（1-50 个） */
   selected_node_ids: string[]
   agent_id: number
+  /** 可选：本次推演使用的模型；不传则沿用 Agent 模板绑定的模型 */
+  model_id?: string
 }
 
 /** SSE event: start */

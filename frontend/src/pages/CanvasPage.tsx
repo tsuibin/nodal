@@ -30,6 +30,7 @@ import '@xyflow/react/dist/style.css'
 
 import { useAuth } from '../hooks/useAuth'
 import { useAgentList } from '../hooks/useAgentList'
+import { useModelCatalog } from '../hooks/useModelCatalog'
 import { useCanvasGraph } from '../hooks/useCanvasGraph'
 import { useInferStream } from '../hooks/useInferStream'
 import { useLoginModal } from '../components/LoginModalProvider'
@@ -191,6 +192,7 @@ function CanvasWorkspace({ initialCanvas, onBack, onNeedLibrary }: CanvasWorkspa
   const canEdit = initialCanvas.permissions.can_edit
   const graph = useCanvasGraph()
   const agents = useAgentList(authenticated)
+  const models = useModelCatalog(authenticated)
 
   const [canvas, setCanvas] = useState<CanvasView>(initialCanvas)
   const [title, setTitle] = useState(initialCanvas.title)
@@ -351,7 +353,7 @@ function CanvasWorkspace({ initialCanvas, onBack, onNeedLibrary }: CanvasWorkspa
     },
   })
 
-  const startInfer = (agentID: number) => {
+  const startInfer = (agentID: number, modelID: string) => {
     if (!authenticated) {
       openLogin()
       return
@@ -360,6 +362,7 @@ function CanvasWorkspace({ initialCanvas, onBack, onNeedLibrary }: CanvasWorkspa
     void infer.run(initialCanvas.id, {
       selected_node_ids: selected.nodes,
       agent_id: agentID,
+      model_id: modelID,
     })
   }
 
@@ -724,6 +727,8 @@ function CanvasWorkspace({ initialCanvas, onBack, onNeedLibrary }: CanvasWorkspa
         selectedCount={selected.nodes.length}
         agents={agents.items}
         loadingAgents={agents.loading}
+        models={models.items}
+        loadingModels={models.loading}
         running={infer.running}
         error={infer.error}
         done={infer.done}

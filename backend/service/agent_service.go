@@ -102,6 +102,11 @@ func (s *AgentService) List(ctx context.Context, id *token.Identity) (*AgentList
 		return nil, apperr.New(apperr.CodeForbidden, "游客无法查看 Agent，请先登录")
 	}
 
+	// 新账号没有任何模板时，补一个免密钥的默认 Agent，保证推演入口不是空的。
+	if err := s.ensureDefault(ctx, id); err != nil {
+		slog.Warn("ensure default agent failed", "owner_key", id.OwnerKey(), "error", err)
+	}
+
 	var agents []model.AgentTemplate
 	if err := s.db.WithContext(ctx).
 		Where("owner_key = ?", id.OwnerKey()).
@@ -115,6 +120,37 @@ func (s *AgentService) List(ctx context.Context, id *token.Identity) (*AgentList
 		items = append(items, *s.view(&agents[i]))
 	}
 	return &AgentList{Items: items, Total: int64(len(items))}, nil
+}
+
+// ensureDefault 给空账号补一个可立即使用的 Agent。
+//
+// 用 mock/basic 是因为它不需要 API Key，部署完就能点“开始推演”；
+// 用户配置真实模型 Key 后，可以在 Agent 模板或推演弹窗里切换模型。
+func (s *AgentService) ensureDefault(ctx context.Context, id *token.Identity) error {
+	var count int64
+	if err := s.db.WithContext(ctx).Model(&model.AgentTemplate{}).
+		Where("owner_key = ?", id.OwnerKey()).Count(&count).Error; err != nil {
+		return err
+	}
+	if count > 0 {
+		return nil
+	}
+
+	agent := &model.AgentTemplate{
+		OwnerKey:     id.OwnerKey(),
+		Name:         "Nodal 演示助手",
+		Description:  "免密钥的本地模拟 Agent，部署完成后即可体验推演流程",
+		SystemPrompt: "你是一个严谨的思维推演助手。基于用户选中的节点，补充推导、反例、佐证或并行假设，只新增节点和连线。",
+		ModelID:      "mock/basic",
+	}
+	if err := s.db.WithContext(ctx).Create(agent).Error; err != nil {
+		if errors.Is(err, gorm.ErrDuplicatedKey) {
+			return nil
+		}
+		return err
+	}
+	slog.Info("default agent created", "agent_id", agent.ID, "owner_key", agent.OwnerKey)
+	return nil
 }
 
 func (s *AgentService) Get(ctx context.Context, id *token.Identity, agentID uint) (*AgentView, error) {

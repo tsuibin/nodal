@@ -4,7 +4,7 @@
  * 流本身由页面持有（关闭弹窗后仍要继续增量渲染），弹窗只负责选择与状态展示。
  */
 import { useEffect, useState } from 'react'
-import type { AgentTemplate } from '../../types/agent'
+import type { AgentTemplate, ModelCatalogItem } from '../../types/agent'
 import type { ApiError } from '../../services/http'
 import type { InferDonePayload } from '../../types/infer'
 import { BotIcon, CloseIcon, PlayIcon } from '../icons'
@@ -14,11 +14,13 @@ export interface InferDialogProps {
   selectedCount: number
   agents: AgentTemplate[]
   loadingAgents: boolean
+  models: ModelCatalogItem[]
+  loadingModels: boolean
   running: boolean
   error: ApiError | Error | null
   done: InferDonePayload | null
   onClose: () => void
-  onRun: (agentId: number) => void
+  onRun: (agentId: number, modelId: string) => void
   onNeedLogin: () => void
   onNeedAgent: () => void
 }
@@ -28,6 +30,8 @@ export function InferDialog({
   selectedCount,
   agents,
   loadingAgents,
+  models,
+  loadingModels,
   running,
   error,
   done,
@@ -37,6 +41,7 @@ export function InferDialog({
   onNeedAgent,
 }: InferDialogProps) {
   const [agentID, setAgentID] = useState<number | null>(null)
+  const [modelID, setModelID] = useState<string>('')
 
   useEffect(() => {
     if (!open) return
@@ -45,6 +50,22 @@ export function InferDialog({
       setAgentID(agents[0]?.id ?? null)
     }
   }, [agents, agentID, open])
+
+  // 切换 Agent 时，模型默认回到该 Agent 模板绑定的模型。
+  useEffect(() => {
+    const agent = agents.find((item) => item.id === agentID)
+    if (agent) setModelID(agent.model_id)
+    // 只在 Agent 变化时重置；不要覆盖用户手动选择的模型
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentID])
+
+  // 模型目录加载完成或当前模型失效时，回落到第一个已配置 Key 的模型。
+  useEffect(() => {
+    if (models.length === 0) return
+    if (modelID && models.some((model) => model.id === modelID)) return
+    const configured = models.find((model) => model.configured)
+    setModelID(configured?.id ?? models[0]?.id ?? '')
+  }, [models, modelID])
 
   if (!open) return null
 
@@ -109,6 +130,32 @@ export function InferDialog({
             </label>
           )}
 
+          {models.length > 0 ? (
+            <label className="nodal-field">
+              <span>选择模型{loadingModels ? '（加载中…）' : ''}</span>
+              <select
+                className="nodal-select w-full"
+                value={modelID}
+                disabled={running || loadingModels}
+                onChange={(event) => setModelID(event.target.value)}
+              >
+                {models.map((model) => (
+                  <option key={model.id} value={model.id} disabled={model.requires_key && !model.configured}>
+                    {model.label}
+                    {model.requires_key && !model.configured ? '（未配置 Key）' : ''}
+                  </option>
+                ))}
+              </select>
+              {models.every((model) => model.requires_key && !model.configured) ? (
+                <span className="text-[11px] text-[var(--nodal-muted)]">
+                  还没有可用模型。先到模型设置里保存至少一个 API Key，或使用本地模拟模型。
+                </span>
+              ) : null}
+            </label>
+          ) : loadingModels ? (
+            <p className="text-[11px] text-[var(--nodal-muted)]">正在加载模型目录…</p>
+          ) : null}
+
           {selected ? (
             <div className="rounded-xl bg-[var(--nodal-surface-soft)] p-3">
               <p className="text-[11px] font-semibold text-[var(--nodal-muted)]">SYSTEM PROMPT</p>
@@ -153,8 +200,8 @@ export function InferDialog({
             <button
               type="button"
               className="nodal-btn nodal-btn-primary"
-              disabled={running || !agentID || selectedCount === 0}
-              onClick={() => agentID && onRun(agentID)}
+              disabled={running || !agentID || !modelID || selectedCount === 0}
+              onClick={() => agentID && modelID && onRun(agentID, modelID)}
             >
               <PlayIcon width={15} height={15} />
               {running ? '推演中…' : '开始推演'}

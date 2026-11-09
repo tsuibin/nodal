@@ -53,6 +53,8 @@ func NewInferService(db *gorm.DB, router *llm.Router, creds *CredentialService, 
 type RunInferInput struct {
 	SelectedNodeIDs []string `json:"selected_node_ids" binding:"required,min=1,max=50,dive,min=1,max=64"`
 	AgentID         uint     `json:"agent_id" binding:"required"`
+	// ModelID 可选：前端模型下拉框选择的模型；为空时沿用 Agent 模板绑定的模型。
+	ModelID string `json:"model_id" binding:"omitempty,max=80"`
 }
 
 // InferEmitter 是 SSE 输出口；实现方负责序列化与 flush。
@@ -125,7 +127,12 @@ func (s *InferService) Prepare(ctx context.Context, id *token.Identity, canvasID
 	if err != nil {
 		return nil, err
 	}
-	spec, client, err := s.router.Resolve(agent.ModelID)
+	// 模型优先级：本次请求显式选择的模型 > Agent 模板绑定的模型。
+	modelID := strings.TrimSpace(in.ModelID)
+	if modelID == "" {
+		modelID = agent.ModelID
+	}
+	spec, client, err := s.router.Resolve(modelID)
 	if err != nil {
 		return nil, err
 	}
